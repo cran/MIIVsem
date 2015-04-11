@@ -1,0 +1,13 @@
+f1134d7cd660e602945dd0ddd698ac62 *DESCRIPTION
+2b0a7ab82552043f2cff3ca2f2fd9fde *NAMESPACE
+60f58929c1411527775fa13346c5dea0 *R/MIIVsem-data.R
+d8cb324fcfb30bfebb2853975400099d *R/MIIVsem.R
+fc0a460781579795849ffe8433de9f9d *R/miive.R
+22fbd7e3c8dcdfdfb69bf4f8056b7711 *R/miivs.R
+10d4dba01e67476bb633fdc9c3a41960 *R/print.miive.R
+ff410b9a02a51d7a53e58cf48c867604 *R/print.miivs.R
+dfac0791303c77465b303453b20aee03 *data/bollen1989a.rda
+1076d3c17a6d243508264f9152ef27f9 *man/MIIVsem.Rd
+c429909dfb9222fddfdd3a3b517a3f90 *man/bollen1989a.Rd
+be2211c9c04abc5c6cd98d0925f6ea62 *man/miive.Rd
+dd786420e34e6865cd095f384a9b1b96 *man/miivs.Rd

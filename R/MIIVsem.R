@@ -1,0 +1,34 @@
+#' In-line documentation for R.
+#'
+#' MIIVsem is a package for estimating structural equation models 
+#' using a model-implied instrumental variable (MIIV) 
+#' search and two stage least squares (2SLS) estimator 
+#' (MIIV-2SLS).
+#'
+#' 
+#' @author
+#' Zachary Fisher,
+#' Ken Bollen 
+#'
+#' @name MIIVsem
+#' @docType package
+#' @import lavaan
+#' @references Bollen, K. A. 1996.	An	Alternative	2SLS Estimator	for	Latent	
+#' Variable	Models.	\emph{Psychometrika}, 61, 109-121.
+#' 
+#' Bollen,	K. A. 2001.	Two-stage	Least	Squares	and	Latent	Variable	Models:	
+#' Simultaneous	Estimation	and	Robustness	to	Misspecifications.
+#' 	In	R.	Cudeck,	S.	Du	Toit,	and	D.	Sorbom	(Eds.),	Structural	
+#' 	Equation	Modeling:	Present	and	Future,	A	Festschrift	in	Honor	of	Karl	
+#' 	Joreskog	(pp. 119-138).	Lincoln,	IL: Scientific	Software.
+#' 
+#' 	Bollen,	K. A. and	D. J.	Bauer.	2004.	Automating	the	Selection	of 
+#' 	Model-Implied	Instrumental	Variables.	\emph{Sociological	Methods	and	
+#' 	Research}, 32, 425-52.
+#' 
+#' @seealso See \code{vignette("MIIVsem", package = "MIIVsem")} for an overview
+#'   of the package, \code{vignette("miivs", package = "MIIVsem")} for model-
+#'   implied instrumental variable search, and \code{vignette("miivsem", package = "MIIVsem")} 
+#'   for estimating models. 
+#' @keywords 2SLS, two stage least squares, MIIV, instrument, SEM
+NULL
