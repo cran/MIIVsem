@@ -12,7 +12,7 @@
 #'
 #' @name MIIVsem
 #' @docType package
-#' @import lavaan
+#' @import lavaan Matrix
 #' @references Bollen, K. A. 1996.	An	Alternative	2SLS Estimator	for	Latent	
 #' Variable	Models.	\emph{Psychometrika}, 61, 109-121.
 #' 

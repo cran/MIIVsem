@@ -13,9 +13,9 @@
 #'   \item y6. freedom of political opposition, 1965
 #'   \item y7. fairness of elections, 1965
 #'   \item y8. effectiveness of elected legislature, 1965
-#'   \item x1. GNP per capita, 1960
-#'   \item x2. energy consumption per capita, 1960
-#'   \item x3. percentage of labor force in industry, 1960
+#'   \item x1. natural log of GNP per capita, 1960
+#'   \item x2. natural log of energy consumption per capita, 1960
+#'   \item x3. arcsin of square root of percentage of labor force in industry, 1960
 
 
 #' }

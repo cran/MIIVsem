@@ -1,3 +1,4 @@
+#' @method print miivs 
 #' @export
 print.miivs <- function(x,...){
   modeqns   <- x$df
