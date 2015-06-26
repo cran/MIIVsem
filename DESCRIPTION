@@ -1,6 +1,7 @@
 Package: MIIVsem
-Title: Two Stage Least Squares with Model Implied Instrumental Search
-Version: 0.2
+Title: Two Stage Least Squares with Model Implied Instrumental Variable
+        Search
+Version: 0.3
 Author: Zachary Fisher and Ken Bollen.
 Maintainer: Zachary Fisher <fish.zachary@gmail.com>
 Description: Functions for estimating structural equation models 
@@ -10,6 +11,6 @@ Depends: R (>= 3.1.2), lavaan, Matrix
 License: GPL-2
 LazyData: true
 NeedsCompilation: no
-Packaged: 2015-06-05 19:02:09 UTC; macuser
+Packaged: 2015-06-26 04:28:09 UTC; macuser
 Repository: CRAN
-Date/Publication: 2015-06-06 01:37:07
+Date/Publication: 2015-06-26 10:49:55

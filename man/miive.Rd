@@ -34,7 +34,7 @@ Estimate SEM models using MIIV-2SLS.
 \itemize{
 \item{\code{overid}} {If the user-specified degree of overidentification (\code{overid}) exceeds the number of available MIIVs for a given equation, the maximum number of MIIVs will be used instead.  In this case, the \code{df} column for any equations in which the degrees of freedom for the \code{Sargan} test are less than the \code{overid} value will be appended with an \code{*}. A note willalso  be displayed to alert the user to the changes. In the example below, the \code{overid} parameter is set to 2, however the \code{y1} equation has only 1 additional MIIV avaialable.}
 \item{\code{instruments}} {Using the \code{instruments} option you can specify the MIIVs directly for each equation in the model.  To utilize this option you must first define a list of instruments using the syntax displayed below. After the list is defined, set the \code{instruments} argument equal to the name of the list of MIIVs. Note, \code{instruments} are specified for an equation, and not for a specific endogenous variable.}
- \item{\code{varcov}} {Currently, only \code{ML} and \code{ULS} options are supported through the \code{\link[lavaan]{lavaan}} package.}
+ \item{\code{varcov}} {Currently, only \code{"ML"} and \code{"ULS"} fitting functions are supported through the \code{\link[lavaan]{lavaan}} package.}
 }
 }
 \examples{

@@ -9,7 +9,6 @@
 #' @param printmiivs A logical indicating whether or not to display MIIVs in output.
 #' @param varcov Option for estimating conditional variance and coavariance paramaters. Default is (\code{NULL}).
 #'
-#'
 #' @return model
 #' @return dat
 #' @return modeeqns
@@ -18,7 +17,7 @@
 #' \itemize{
 #' \item{\code{overid}} {If the user-specified degree of overidentification (\code{overid}) exceeds the number of available MIIVs for a given equation, the maximum number of MIIVs will be used instead.  In this case, the \code{df} column for any equations in which the degrees of freedom for the \code{Sargan} test are less than the \code{overid} value will be appended with an \code{*}. A note willalso  be displayed to alert the user to the changes. In the example below, the \code{overid} parameter is set to 2, however the \code{y1} equation has only 1 additional MIIV avaialable.}
 #' \item{\code{instruments}} {Using the \code{instruments} option you can specify the MIIVs directly for each equation in the model.  To utilize this option you must first define a list of instruments using the syntax displayed below. After the list is defined, set the \code{instruments} argument equal to the name of the list of MIIVs. Note, \code{instruments} are specified for an equation, and not for a specific endogenous variable.}
-#'  \item{\code{varcov}} {Currently, only \code{ML} and \code{ULS} options are supported through the \code{\link[lavaan]{lavaan}} package.}
+#'  \item{\code{varcov}} {Currently, only \code{"ML"} and \code{"ULS"} fitting functions are supported through the \code{\link[lavaan]{lavaan}} package.}
 #' }
 #' 
 #' @references 
@@ -85,15 +84,24 @@
 #' @export
 miive <- function(model = model, data = data, instruments = NULL, overid = NULL,
                   varcov = NULL, printmiivs = FALSE){
-  d  <- miivs(model)$eqns
+  if( "miivs" == class(model) ){ 
+    mod <- model
+    d   <- mod$eqns
+  } 
+  
+  if( "miivs" != class(model) ){
+    mod <- miivs(model)
+    d   <- mod$eqns
+  } 
+  
   digits <- 3
   
  if ( !is.null(overid) && !is.null(instruments) )  {
         stop(paste("Cannot supply both instruments list and overid."))}
   
- if ( length(miivs(model)$constr) == 0 )  { 
+ if ( length(mod$constr) == 0 )  { 
       restrictions = FALSE }
- if ( length(miivs(model)$constr) > 0 )  { 
+ if ( length(mod$constr) > 0 )  { 
       restrictions = TRUE }
   
   if (!is.null(instruments)){
@@ -111,21 +119,27 @@ miive <- function(model = model, data = data, instruments = NULL, overid = NULL,
     dv_user <- unlist(lapply(iv_list, "[", c("DV_user")), use.names=FALSE)
     iv_user <- unlist(lapply(iv_list, "[", c("IV_user")), use.names=FALSE)
   
+    eqns_not_to_estimate <- c()
     for (i in 1:length(d)){
     
       dv <- d[[i]]$DV
       index <- which(dv_user == dv)
     
-      if (is.integer(index) && length(index) == 0L) {
-        stop(paste("Cannot find instruments for ", dv))}
+      #if (is.integer(index) && length(index) == 0L) {
+      #  stop(paste("Cannot find instruments for ", dv))}
       
+      # if the equation isn't listed delete it
+      if (is.integer(index) && length(index) == 0L) {
+        eqns_not_to_estimate <- c(eqns_not_to_estimate, i) 
+      }
+      
+      if (is.integer(index) && length(index) != 0L) {
       iv_user  <- iv_list[[index]]$IV_user
       iv_miivs <- d[[i]]$IV
       n_pred   <- length(d[[i]]$P)
     
       if (length(iv_user) < n_pred) {
         stop(paste("Need at least ", n_pred," instruments for ", dv))}
-    
     
       check <- iv_user[which(!(iv_user%in%iv_miivs))]
     
@@ -135,6 +149,7 @@ miive <- function(model = model, data = data, instruments = NULL, overid = NULL,
       d[[i]]$IV3 <- iv_user
     
     }
+  }
     
   } #
   
@@ -180,6 +195,9 @@ miive <- function(model = model, data = data, instruments = NULL, overid = NULL,
   }
   
    if (!is.null(instruments)){ 
+    if (length(eqns_not_to_estimate) > 0){
+      d <- d[-eqns_not_to_estimate]
+    }
     for (i in 1:length(d)){
       d[[i]]$IV2 <- d[[i]]$IV3 
     }
@@ -230,29 +248,48 @@ miive <- function(model = model, data = data, instruments = NULL, overid = NULL,
         H <- as.matrix(bdiag(H, as.matrix(cbind(1, data[,d[[i]]$P]))))
       }
     }
-
+    
     Xhat  <- Z %*% solve(crossprod(Z)) %*% t(Z) %*% H
-    top   <- cbind(t(Xhat) %*% Xhat, t(R))
-    bot   <- cbind(R, matrix(0, ncol=nrow(R), nrow=nrow(R)))
-    theta_full <- as.matrix(solve(rbind(top, bot)) %*% (rbind(t(Xhat) %*% y, L)))
-    theta_res <- cbind(theta_full[1:length(eqlist),])
-    rownames(theta_res) <- eqlist
+    left  <- solve(rbind(cbind(t(Xhat) %*% Xhat, t(R)), cbind(R, matrix(0, ncol=nrow(R), nrow=nrow(R)))))
+    right <-  rbind(t(Xhat) %*% y, L)
+    theta_full <- left %*% right
+    theta      <- cbind(theta_full[1:length(eqlist),])
+    rownames(theta) <- eqlist
+
+    resCov <- matrix(0, nrow = length(d), ncol = length(d))
+    res <- y - H %*% theta
+    s <- seq.int(from = 1, to = length(d) * nrow(data), by = nrow(data))
+    e <- seq.int(from = nrow(data), to = length(d) * nrow(data), by = nrow(data))
+    for(r in 1:length(d)){
+      for(c in 1:length(d)){
+        resCov[r,c] <- (t(res[s[r]:e[r],]) %*% res[s[c]:e[c],]) / nrow(data) 
+      }
+    }
+    OmegaInv <- solve(kronecker(diag(diag(resCov)), diag(nrow(data))) )
+    top <- cbind(t(Xhat) %*% OmegaInv %*% Xhat, t(R))
+    bot <- cbind(R, matrix(0, ncol=nrow(R), nrow=nrow(R)))
+    covTheta_full <- as.matrix(solve(rbind(top, bot)) )
+    covTheta <- (covTheta_full[1:length(eqlist),1:length(eqlist)])
+    rownames(covTheta) <- eqlist
+    seTheta <- cbind(sqrt(diag(covTheta)))
+    rownames(seTheta) <- eqlist
     
     for(i in 1:length(d)){
       temp <- c( paste(d[[i]]$DV, "_Int", sep=""),
                  paste(d[[i]]$DV, "_",d[[i]]$P, sep="") )
-      d[[i]]$ESTR <- theta_res[which(rownames(theta_res) %in% temp)]
+      d[[i]]$ESTR <- theta[which(rownames(theta) %in% temp)]
+      d[[i]]$SE   <- theta[which(rownames(seTheta) %in% temp)]
     }
       
   }
-
   
   dat    <- data.frame()
   for (i in 1:length(d)){
+    
     y <- as.matrix(cbind(data[,d[[i]]$DV] ) )
     H <- as.matrix(cbind(1, data[,d[[i]]$P] ) )
     Z <- as.matrix(cbind(1, data[,d[[i]]$IV] ) )
-    P  <- Z %*% solve(crossprod(Z)) %*% t(Z) # projection matrix
+    P  <- Z %*% solve(crossprod(Z)) %*% t(Z) 
     b  <- solve(t(H) %*% P %*% H) %*% t(H) %*% P %*% y
     d[[i]]$EST <- as.numeric(b)
     if (restrictions == TRUE) {b <- as.numeric(d[[i]]$ESTR)}
@@ -261,7 +298,7 @@ miive <- function(model = model, data = data, instruments = NULL, overid = NULL,
     L0 <- as.numeric(crossprod(RS) / (nrow(data)))
     ZH <- Z %*% solve(crossprod(Z)) %*% crossprod(Z,H)
     AC <- L0 * (solve(crossprod(ZH)) %*% crossprod(ZH) %*% solve(crossprod(ZH)))
-    d[[i]]$SE <- sqrt(diag(AC))
+    if (restrictions == FALSE) {d[[i]]$SE <- sqrt(diag(AC))}
     IVID   <- solve(crossprod(Z)) %*% crossprod(Z,RS)
     SST    <- sum((RS-mean(RS))^2)
     SSE    <- sum((RS - (Z %*% IVID))^2)
@@ -285,18 +322,10 @@ miive <- function(model = model, data = data, instruments = NULL, overid = NULL,
     AC2  <- L02 * (solve(crossprod(ZH)) %*% crossprod(ZH) %*% solve(crossprod(ZH)))
     
       if (i == 1){ 
-        if (restrictions == TRUE){ 
-          SIGR  <- RS 
-          br.cov <- AC
-        }
         SIG   <- RSU
         b.cov <- AC2
       }
       if (i > 1 ){ 
-        if (restrictions == TRUE){ 
-          SIGR  <- rbind(SIGR, RS)
-          br.cov <- as.matrix(bdiag(br.cov, AC))
-          }
         SIG   <- rbind(SIG , RSU)
         b.cov <- as.matrix(bdiag(b.cov, AC2))
       }
@@ -326,14 +355,8 @@ miive <- function(model = model, data = data, instruments = NULL, overid = NULL,
     
     
     if (restrictions == TRUE){ 
-      rescov.r  <- matrix(0, nrow = length(d), ncol = length(d))
-      for(r in 1:length(d)){
-          for(c in 1:length(d)){
-            rescov.r[r,c] <- (t(SIGR[which(rownames(SIGR) == d[[r]]$DV)]) %*%
-                                SIGR[which(rownames(SIGR) == d[[c]]$DV)]) /
-                                nrow(data)
-          }
-      }
+      br.cov    <- covTheta
+      rescov.r  <- resCov
       dimnames(rescov.r) <- list(unlist(lapply(d, "[[", "DV")), 
                                  unlist(lapply(d, "[[", "DV")))
     }
@@ -349,16 +372,19 @@ miive <- function(model = model, data = data, instruments = NULL, overid = NULL,
     dimnames(rescov) <- list(unlist(lapply(d, "[[", "DV")), 
                              unlist(lapply(d, "[[", "DV")))
 
-    for (i in 1:length(d)){
-      LHS <- paste(d[[i]]$DV, collapse = ", ")
-      RHS <- paste(d[[i]]$P, collapse = ", ")
-      Instruments <- paste(d[[i]]$IV2, collapse = ", ")
-      Disturbance <- paste("e.",d[[i]]$C, collapse = ", ", sep="")
-      Effects <- paste(d[[i]]$EF, collapse = ", ") 
-      modtemp <- as.data.frame(cbind(LHS, RHS, Disturbance, Instruments))
-      colnames(modtemp) <- c("LHS", "RHS", "Composite Disturbance", "MIIVs")
-      if (i == 1) {modeqns <- modtemp }
-      if (i >  1) {modeqns <- rbind(modeqns,modtemp) }
+    modeqns <- NULL
+    if (printmiivs == TRUE){
+      for (i in 1:length(d)){
+        LHS <- paste(d[[i]]$DV, collapse = ", ")
+        RHS <- paste(d[[i]]$P, collapse = ", ")
+        Instruments <- paste(d[[i]]$IV2, collapse = ", ")
+        Disturbance <- paste("e.",d[[i]]$C, collapse = ", ", sep="")
+        Effects <- paste(d[[i]]$EF, collapse = ", ") 
+        modtemp <- as.data.frame(cbind(LHS, RHS, Disturbance, Instruments))
+        colnames(modtemp) <- c("LHS", "RHS", "Composite Disturbance", "MIIVs")
+        if (i == 1) {modeqns <- modtemp }
+        if (i >  1) {modeqns <- rbind(modeqns,modtemp) }
+      }
     }
   
   restests   <- NULL
@@ -438,15 +464,12 @@ miive <- function(model = model, data = data, instruments = NULL, overid = NULL,
                        "StdErr", "Z", "P(|Z|)")
   vcov <- list(cov = cpe, var = vpe)
   }
-  
-  lavfit <- NULL
-  if (!is.null(varcov)){lavfit <- fit2}
 
   ctrlopts <- list(printmiivs = printmiivs, restrictions = restrictions, 
                    varcov = varcov)
   
   res <- list(model = d, dat = dat, modeqns = modeqns, ctrlopts = ctrlopts, 
-              restests = restests, vcov = vcov, lavfit = lavfit, resmat = resmat)
+              restests = restests, vcov = vcov)
   class(res) <- "miive"
   res
 }

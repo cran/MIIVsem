@@ -3,6 +3,7 @@
 #' A key step in the MIIV-2SLS approach is to transform the SEM by replacing the latent variables with their scaling indicators minus their errors.  Upon substitution the SEM is transformed from a model with latent variables to one in observed variables with composite errors.  The miivs function automatically makes this transformation.
 #'
 #' @param model A model specified using lavaan model syntax. See the \code{model} argument within the \code{\link[lavaan]{lavaanify}} function for more information.
+#' @param miivs.out A logical indicating whether or not to print the MIIVs as an object for later use. Default is \code{FALSE}.
 #'
 #' @return eqns
 #' @return modeqns
@@ -47,7 +48,7 @@
 #'  miivs(bollen1989a_model)
 #'  
 #' @export
-miivs <- function(model) {
+miivs <- function(model, miivs.out = FALSE) {
   
     fit <- lavaan(model, auto.fix.first = TRUE, auto.var=TRUE, auto.cov.lv.x = TRUE)
     pt  <- parTable(fit)
@@ -56,54 +57,27 @@ miivs <- function(model) {
     BA  <- inspect(fit)$beta
     TH  <- inspect(fit)$theta
     PS  <- inspect(fit)$psi
-    
-    # Get rid of zero'd beta values should they exist
-    #df  <- df[!(as.character(df$mat) == "beta" & (df$free == 0)), ]
-    
-    # for manifest vars which are not indicators
-    # indicators   <- unique(df[df$op == "=~", ]$rhs) 
-    #origlatentvars <- unique(df[df$op == "=~", ]$lhs) 
-    # manifestXvars <- setdiff(unique(df[df$op == "~", ]$rhs))
-    # manifestYvars <- unique(df[df$op == "~", ]$lhs))
-    #setdiff(latEnd <- unique(df[df$op == "=~", ]$lhs) )
-    
-    # Get original variable names
-    if (is.element('beta', df$mat)){
-      latEnd <- unique(df[df$op == "=~", ]$lhs) 
-      latEnd <- intersect(unique(df[grep("beta", df$mat), ]$lhs), latEnd)
-      latExo <- unique(df[df$op == "=~", ]$lhs) 
-      latExo <- intersect(df[grep("beta", df$mat), ]$rhs, latExo)
-      latExo <- setdiff(latExo, latEnd)
-    }
-    if (!is.element('beta', df$mat)){
-      latEnd <- c()
-      latExo <- unique(df[grep("lambda", df$mat), ]$lhs)
-    }
-    manExo <- df[df$lhs %in% latExo & df$mat %in% "lambda", ]$rhs
-    manEnd <- df[df$lhs %in% latEnd & df$mat %in% "lambda", ]$rhs
-    latAll <- c(latEnd, latExo)
-    manAll <- c(latEnd, latExo)
+
+    latEnd   <- unlist(fit@pta$vnames$lv.nox)
+    latExo   <- unlist(fit@pta$vnames$lv.x)
+    manifest <- unlist(fit@pta$vnames$ov)
+    latent   <- unlist(fit@pta$vnames$lv)
     
     # Get counts for each variable type
     numLatEnd <- length(latEnd)
     numLatExo <- length(latExo)
-    numManExo <- length(manExo)
-    numManEnd <- length(manEnd)
-    numLatAll <- length(latAll)
-    numManAll <- length(manAll)
-    
-    # Get scaling and non-scaling indicators in x and y notation, dvs
-    # Take into account additional vars fixed to 1
-    # For now the first indicator for each latvar is the scaling var.
-    y1 <- df[df$lhs %in% latEnd & df$ustart == 1 & !duplicated(df$lhs), "rhs"]
+
+    y0 <- df[df$mat == "lambda" & df$lhs %in% latEnd, "rhs"]
+    y1 <- df[df$mat == "lambda" & df$ustart == 1 & df$lhs %in% latEnd, "rhs"]
     y1 <- y1[!is.na(y1)]
-    y2 <- setdiff(manEnd, y1)
-    x1 <- df[df$lhs %in% latExo & df$ustart == 1 & !duplicated(df$lhs), "rhs"]
+    y2 <- setdiff(y0, y1)
+    x0 <- df[df$mat == "lambda" & df$lhs %in% latExo, "rhs"]
+    x1 <- df[df$mat == "lambda" & df$ustart == 1 & df$lhs %in% latExo, "rhs"]
     x1 <- x1[!is.na(x1)]
-    x2 <- setdiff(manExo, x1)
+    x2 <- setdiff(x0, x1)
     xy <- c(y1, y2, x1, x2)
     dv <- c(y1, y2, x2)
-        
+
     # Get lambda matrices for y2 and x2 only
     LA <- LA[c(y2, x2), ] 
     
@@ -113,8 +87,8 @@ miivs <- function(model) {
     colnames(trans) <- c("obs", "lat")
     
     # Names functions
-    names <- na.omit(df[df$ustart == 1, c("lhs", "rhs")])
-    names <- rbind(names, data.frame("lhs" = xy, "rhs" = xy))
+    #names <- na.omit(df[df$ustart == 1, c("lhs", "rhs")])
+    #names <- rbind(names, data.frame("lhs" = xy, "rhs" = xy))
     
     # Replace latent with obs
     Lat2Obs <- function(x) {
@@ -141,7 +115,7 @@ miivs <- function(model) {
     }
     
     TH_temp <- repElemWithColName(TH)
-    
+
     if (numLatEnd > 0){
       PS_t <- repElemWithColName(PS[latEnd, latEnd,drop = FALSE])
       names(PS_t) <- sapply(names(PS_t), function(x) Lat2Obs(x), simplify=FALSE)
@@ -160,7 +134,7 @@ miivs <- function(model) {
     
     # Create error index
     err_df <- na.omit(df[df$mat == "theta", c("lhs", "rhs")])
-    err_df_add <- na.omit(df[df$mat == "psi", c("lhs", "rhs")]) # get psi rows
+    err_df_add <- na.omit(df[df$mat == "psi", c("lhs", "rhs")]) 
     
     # Get variances from psi matrix
     err_df_var <- err_df_add[err_df_add[, "lhs"] == err_df_add[, "rhs"], ]
@@ -212,7 +186,7 @@ miivs <- function(model) {
         }
       }
     }
-    # Set up Master List for Equation
+    
     eqns <- list(DV = "", DV2="", IV = "", L = "", EQ = "", PA = "", C = "", 
                  EF = "", PIV = "", W = "", P="", IV2="", P2="", EQNUM = "",
                  FIX = "", EST = "", ESTR = "", SE = "", MSG = "", NOTE = "")
@@ -233,7 +207,7 @@ miivs <- function(model) {
         }
     }
 
-    # Add predictos and equality constraints to eqns
+    # Add predictors and equality constraints to eqns
     for (i in 1:length(eqns)) {
         for (j in 1:nrow(obsdf)) {
             if (eqns[[i]]$DV == obsdf[j, "lhs"]) {
@@ -276,9 +250,9 @@ miivs <- function(model) {
         }
     }
     
-    # Add Effects to Matrix
+    # Add effects to matrix
     for (i in 1:length(eqns)) {
-      if (numLatEnd > 0){ # just added
+      if (numLatEnd > 0){ 
         for (j in 1:length(EF_x)) {
             for (k in 1:length(eqns[[i]]$PA)) {
                 if (eqns[[i]]$PA[k] == names(EF_x)[j]) {
@@ -293,7 +267,7 @@ miivs <- function(model) {
       eqns[[i]]$EF <- unique(eqns[[i]]$EF)
     }
     
-    # Add Effects
+    # Add effects
     effects <- list(DV = "", EF = "")
     effects <- replicate(numLatExo, effects, simplify = FALSE)
     for (i in 1:(length(effects))) {
@@ -302,7 +276,7 @@ miivs <- function(model) {
     }
     effects <- append(lapply(eqns, "[", c("DV", "EF")), effects)
     
-    # Potential Instruments
+    # Potential instruments
     for (i in 1:length(eqns)) {
         C <- unlist(eqns[[i]]$C)
         for (j in 1:length(effects)) {
@@ -314,7 +288,7 @@ miivs <- function(model) {
         eqns[[i]]$PIV <- eqns[[i]]$PIV[eqns[[i]]$PIV != ""]
     }
     
-    # Final Instruments
+    # Final instruments
     for (i in 1:length(eqns)) {
         C <- eqns[[i]]$C
         for (j in 1:length(C)) {
@@ -330,7 +304,7 @@ miivs <- function(model) {
         eqns[[i]]$IV <- setdiff(eqns[[i]]$PIV, eqns[[i]]$W)
     }
     
-    # Eliminate Correlated zetas 
+    # Eliminate correlated zetas 
     for (i in 1:length(eqns)) {
       if (eqns[[i]]$EQ == "y1" ){
         D <- eqns[[i]]$DV
@@ -356,7 +330,7 @@ miivs <- function(model) {
       if (i >  1) {modeqns <- rbind(modeqns,modtemp) }
     } 
   
-  search <- list(eqns = eqns, df = modeqns, constr = constr)
+  search <- list(eqns = eqns, df = modeqns, constr = constr, miivs.out = miivs.out)
   class(search) <- "miivs"
   search
 }

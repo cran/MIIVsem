@@ -4,10 +4,12 @@
 \alias{miivs}
 \title{Model-implied instrumental variable (MIIV) search}
 \usage{
-miivs(model)
+miivs(model, miivs.out = FALSE)
 }
 \arguments{
 \item{model}{A model specified using lavaan model syntax. See the \code{model} argument within the \code{\link[lavaan]{lavaanify}} function for more information.}
+
+\item{miivs.out}{A logical indicating whether or not to print the MIIVs as an object for later use. Default is \code{FALSE}.}
 }
 \value{
 eqns
