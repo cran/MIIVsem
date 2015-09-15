@@ -17,7 +17,7 @@ eqns
 modeqns
 }
 \description{
-A key step in the MIIV-2SLS approach is to transform the SEM by replacing the latent variables with their scaling indicators minus their errors.  Upon substitution the SEM is transformed from a model with latent variables to one in observed variables with composite errors.  The miivs function automatically makes this transformation.
+A key step in the MIIV-2SLS approach is to transform the SEM by replacing the latent variables with their scaling indicators minus their errors.  Upon substitution the SEM is transformed from a model with latent variables to one containing observed variables with composite errors.  The miivs function automatically makes this transformation.
 }
 \details{
 \itemize{
