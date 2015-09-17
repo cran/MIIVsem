@@ -8,7 +8,7 @@
 #' @param overid A user-specified degree of overidentification (\code{overid}). See Example 3 below. 
 #' @param print.miivs A logical indicating whether or not to display MIIVs in output.
 #' @param varcov Option for estimating conditional variance and coavariance paramaters. Default is \code{NULL}.
-#' @param bootstrap.se Option \code{"pairs"} or \code{"residual"} for obtaining bootstrap standard errors, t-tests, and equal-tail bootstrap P values. Default is \code{NULL}.
+#' @param bootstrap.se Option \code{"pairs"} or \code{"residual"} for obtaining bootstrap standard errors, t-tests, and bootstrap P values. Default is \code{NULL}.
 #' @param cov A named numeric matrix. Default is \code{NULL}.
 #' @param means A sample mean vector. Default is \code{NULL}.
 #' @param N Numeric. The number of observations in the sample. Default is \code{NULL}.
@@ -199,14 +199,14 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
       }
     }
     if (length(eqns_not_to_estimate) > 0){d <- d[-eqns_not_to_estimate]}
-  } # end instruments
+  } 
  
 
   optim <- function(d, overid, data){
     for (i in 1:length(d)){
       y  <- as.matrix( cbind(data[,d[[i]]$DVobs] ) )
       P  <- d[[i]]$IVobs
-      k  <- overid + length(d[[i]]$IVobs) # try absolute next
+      k  <- overid + length(d[[i]]$IVobs) 
       
       if (k > length(d[[i]]$IV) ) {
         d[[i]]$NOTE <- paste("* Maximum number of MIIVs is less than requested degree of overidentification. See df for degree of overidentification.", sep="")
@@ -219,8 +219,8 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
         cd[cd == 1] <- 0
         cd_m <- as.matrix(cd)
     
-        cd_m <- cbind( apply(cd_m, 1, max) ) # get largest val from each row 
-        ord_names <- rownames(cd_m)[order(cd_m, # return col vec
+        cd_m <- cbind( apply(cd_m, 1, max) ) 
+        ord_names <- rownames(cd_m)[order(cd_m, 
                                         decreasing=TRUE)][1:nrow(cd_m)]
     
         temp <- d[[i]]$IV
@@ -229,7 +229,7 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
       }
     }
     return(d)
-  } # end optim
+  } 
 
   if (!is.null(overid)){ d <- optim(d, overid, data)}
   
@@ -254,7 +254,7 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
     dimnames(L) <- list(unlist(lapply(con, "[[", c("NAME"))), c(" "))
     
     for (r in 1:length(con)){
-     if (con[[r]]$FIX == 0 ){ # if the coeff.isn't fixed to a value
+     if (con[[r]]$FIX == 0 ){ 
        R[r, paste(con[[r]]$SET[1],"_",con[[r]]$DV[1], sep="")] <-  1
        R[r, paste(con[[r]]$SET[2],"_",con[[r]]$DV[2], sep="")] <- -1
        L[r] <- 0
@@ -265,7 +265,7 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
        L[r] <- con[[r]]$FIX
      }
     }
-  } # end if restrictions = TRUE
+  } 
   
   if (restrictions == FALSE){
     R <- NULL
@@ -294,8 +294,8 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
     X1inv    <- solve(crossprod(X1)) 
     Y1hat    <- X1%*% X1inv %*% t(X1)%*%Y1
     if (restrictions == TRUE){
-      b <- solve(rbind(cbind(t(Y1hat) %*% Y1hat, t(R)), cbind(R, matrix(0, 
-           ncol=nrow(R), nrow=nrow(R))))) %*% rbind(t(Y1hat) %*% y1, L)
+      b <- solve(rbind(cbind(as.matrix(t(Y1hat) %*% Y1hat), t(R)), cbind(R, matrix(0, 
+           ncol=nrow(R), nrow=nrow(R))))) %*% rbind(as.matrix(t(Y1hat) %*% y1), L)
       b <- cbind(b[1:ncol(R)])
       b.unr <- solve(t(Y1hat)%*%Y1) %*% t(Y1hat)%*%y1
       b.unr <- cbind(b.unr[1:ncol(R)])
@@ -303,7 +303,7 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
     if (restrictions == FALSE){
       b <- solve(t(Y1hat)%*%Y1) %*% t(Y1hat)%*%y1
     }
-  } # end raw data 
+  } 
  
   if (covariance == TRUE){ 
     for (i in 1:length(d)){
@@ -343,7 +343,7 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
     if (restrictions != TRUE){
       b <- solve(sYX %*% solve(sXX) %*% sXY) %*% sYX %*% solve(sXX) %*% sXy
     }
-  } # end covariance == TRUE
+  }
   
 
   dvs <- unlist(lapply(d, function(x) unlist(x$DVobs))) 
@@ -359,7 +359,6 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
   b$eq <- with(b, ave(as.character(dv), FUN = function(x) cumsum(!duplicated(x))))
   b$b <- as.numeric(as.character(b$b))
   b$id <- 1:nrow(b)
-  #bl <- apply(b,1,function(x) as.list(x))
   if (restrictions == TRUE){ 
     b.ur <- b 
     b.ur$b <- b.unr
@@ -395,8 +394,8 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
   dimnames(B.ur) <- list(all,all)
   }
   
-  if (covariance == FALSE){ # needs to be centered data
-    Y         <- as(data[,all, drop=FALSE], "Matrix")
+  if (covariance == FALSE){
+    Y         <- as(as.matrix(data)[,all, drop=FALSE], "Matrix")
     Y.c       <- as(apply(Y, 2, function(y) y - mean(y)), "Matrix")
     E         <- Y.c %*% B; colnames(E) <- all
     S.EE      <- (t(B) %*% crossprod(Y.c) %*% B) / N
@@ -420,7 +419,7 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
       S.EEur <- (t(B.ur) %*% t(Y.c) %*% Y.c %*% B.ur) / N
       I <- Diagonal(N)
       omega <- solve(kronecker(diag(diag(S.EE[unlist(dvs),unlist(dvs)])), I) )
-      top <- cbind(t(Y1hat) %*% omega %*% Y1hat, t(R))
+      top <- cbind(as.matrix(t(Y1hat) %*% omega %*% Y1hat), t(R))
       bot <- cbind(R, matrix(0, ncol=nrow(R), nrow=nrow(R)))
       S.EEr <- as.matrix(solve(rbind(top, bot)) )
       S.EEr <- (S.EEr[1:length(gl),1:length(gl)])

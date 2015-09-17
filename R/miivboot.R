@@ -12,54 +12,6 @@ miivboot <- function(d, dat, restrictions, data, bootstrap.se, reps, R, L, B) {
     stop(paste("MIIVsem does not currently support the pairs bootstrapping 
                 procedure for restricted models."))
     
-#     b0   <- unlist(lapply(d, "[[", "EST"))
-#     b0   <- matrix(b0, nrow = length(b0))
-#     dvs0 <- unlist(lapply(d, "[[", "DVobs"))
-#     
-#     for (j in 1:reps){
-#     
-#     bdata <- data[sample(nrow(data),size=nrow(data),replace=TRUE),]
-#     
-#     for (i in 1:length(d)){
-#       if (i == 1){
-#         y1     <- cbind(bdata[,d[[i]]$DVobs])
-#         X1     <- as.matrix(cbind(1,bdata[,d[[i]]$IV]))
-#         Y1     <- as.matrix(cbind(1,bdata[,d[[i]]$IVobs]))
-#       }
-#       if (i >= 2){
-#         y1    <- rbind(y1, cbind(bdata[,d[[i]]$DVobs]))
-#         X1    <- as.matrix(bdiag(X1, as.matrix(cbind(1,bdata[,d[[i]]$IV]))))
-#         Y1    <- as.matrix(bdiag(Y1, as.matrix(cbind(1,bdata[,d[[i]]$IVobs]))))
-#       }
-#       d[[i]]$IVobsInt <- c(paste(d[[i]]$DVobs,"_Int", sep= ""), d[[i]]$IVobs)
-#     }
-#     
-#     y1 = as(Matrix(y1), "dgeMatrix")
-#     X1 = as(Matrix(X1), "sparseMatrix")
-#     Y1 = as(Matrix(Y1), "sparseMatrix")
-#     
-#     X1inv    <- solve(crossprod(X1)) 
-#     Y1hat    <- X1%*% X1inv %*% t(X1)%*%Y1
-#     b <- solve(rbind(cbind(t(Y1hat) %*% Y1hat, t(R)), cbind(R, matrix(0, 
-#            ncol=nrow(R), nrow=nrow(R))))) %*% rbind(t(Y1hat) %*% y1, L)
-#     b <- cbind(b[1:ncol(R)])
-#     #b.unr <- solve(t(Y1hat)%*%Y1) %*% t(Y1hat)%*%y1
-#     #b.unr <- cbind(b.unr[1:ncol(R)])
-#     
-#     Y         <- as(data[,all, drop=FALSE], "Matrix")
-#     Y.c       <- as(apply(Y, 2, function(y) y - mean(y)), "Matrix")
-#     E         <- Y.c %*% B
-#     S.EE      <- (t(B) %*% crossprod(Y.c) %*% B) / N
-#     I <- Diagonal(N)
-#     omega <- solve(kronecker(diag(diag(S.EE[unlist(dvs0),unlist(dvs0)])), I) )
-#     top   <- cbind(t(Y1hat) %*% omega %*% Y1hat, t(R))
-#     bot   <- cbind(R, matrix(0, ncol=nrow(R), nrow=nrow(R)))
-#     S.EEr <- as.matrix(solve(rbind(top, bot)) )
-#     S.EEr <- (S.EEr[1:nrow(b),1:nrow(b)])
-#     se <- cbind(sqrt(diag(S.EEr)))
-#     t <- (b0 - b)/se
-#     cbind(b,t)
-    
   }
   
   if(restrictions == FALSE & bootstrap.se == "residual"){
@@ -102,17 +54,8 @@ miivboot <- function(d, dat, restrictions, data, bootstrap.se, reps, R, L, B) {
       }
       H2 <- cbind(1,H2)
       y2 <- H2  %*% cbind(b) + u[,1] 
-      #y1 <- H  %*% cbind(b) + u[,1] # changed this
-      # add this below
       ZZinv <- solve(crossprod(Z2))
       b3 <- solve(t(H2)%*%Z2%*%ZZinv%*%t(Z2)%*%H2)%*%t(H2)%*%Z2%*%ZZinv%*%t(Z2)%*%y2
-      
-      # add this above
-      #y1 <- y2  %*% cbind(b) + u[,1] # changed this
-      #y <- as.matrix(cbind(y1))
-      #H <- as.matrix(cbind(1, y2))
-      #P <- Z %*% solve(crossprod(Z)) %*% t(Z) 
-      #b3 <- solve(t(H) %*% P %*% H) %*% t(H) %*% P %*% y
       RS <- y2 - H2  %*% cbind(b3)
       L0 <- as.numeric(crossprod(RS) / (nrow(data)))
       ZH <- Z2 %*% solve(crossprod(Z2)) %*% crossprod(Z2,H2)
@@ -150,13 +93,8 @@ miivboot <- function(d, dat, restrictions, data, bootstrap.se, reps, R, L, B) {
   ses <- t(ses)
 
   for (i in 1:ncol(ttests.sorted)){
-    #p.one.tail <- length(which(ttests.sorted[,i] > crit.vals[i]))/nrow(ttests.sorted)
-    #p.sym <- length(which(abs(ttests.sorted[,i]) > abs(crit.vals[i])))/nrow(ttests.sorted)
-    p.non.sym <- 2* min(c(
-      length(which(abs(ttests.sorted[,i]) < abs(crit.vals[i])))/nrow(ttests.sorted),
-      length(which(abs(ttests.sorted[,i]) > abs(crit.vals[i])))/nrow(ttests.sorted)))
-    #p <- rbind(p.one.tail, p.sym, p.non.sym)
-    p <- p.non.sym
+    p.sym <- length(which(abs(ttests.sorted[,i]) > abs(crit.vals[i])))/nrow(ttests.sorted)
+    p <- p.sym
     if (i == 1){df.p <- p}
     if (i  > 1){df.p <- cbind(df.p,p)}
   }
@@ -219,13 +157,8 @@ miivboot <- function(d, dat, restrictions, data, bootstrap.se, reps, R, L, B) {
   ses <- t(ses)
 
   for (i in 1:ncol(ttests.sorted)){
-    #p.one.tail <- length(which(ttests.sorted[,i] > crit.vals[i]))/nrow(ttests.sorted)
-    #p.sym <- length(which(abs(ttests.sorted[,i]) > abs(crit.vals[i])))/nrow(ttests.sorted)
-    p.non.sym <- 2* min(c(
-      length(which(abs(ttests.sorted[,i]) < abs(crit.vals[i])))/nrow(ttests.sorted),
-      length(which(abs(ttests.sorted[,i]) > abs(crit.vals[i])))/nrow(ttests.sorted)))
-    #p <- rbind(p.one.tail, p.sym, p.non.sym)
-    p <- rbind(p.non.sym)
+    p.sym <- length(which(abs(ttests.sorted[,i]) > abs(crit.vals[i])))/nrow(ttests.sorted)
+    p <- rbind(p.sym)
     if (i ==1){df.p <- p}
     if (i  >1){df.p <- cbind(df.p,p)}
   }

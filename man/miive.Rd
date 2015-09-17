@@ -19,7 +19,7 @@ miive(model = model, data = NULL, overid = NULL, varcov = NULL,
 
 \item{print.miivs}{A logical indicating whether or not to display MIIVs in output.}
 
-\item{bootstrap.se}{Option \code{"pairs"} or \code{"residual"} for obtaining bootstrap standard errors, t-tests, and equal-tail bootstrap P values. Default is \code{NULL}.}
+\item{bootstrap.se}{Option \code{"pairs"} or \code{"residual"} for obtaining bootstrap standard errors, t-tests, and bootstrap P values. Default is \code{NULL}.}
 
 \item{instruments}{A user-supplied list of valid MIIVs for each equation. See Example 2 below.}
 

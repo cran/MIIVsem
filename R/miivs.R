@@ -187,15 +187,16 @@ miivs <- function(model, miivs.out = FALSE) {
     GA1 <- BA[latEnd,latExo, drop = FALSE]
   }
   TE1 <- as.matrix(forceSymmetric(Matrix(TH), "L"))
-  TE1 <- TE1[c(y1, y2), c(y1, y2), drop = FALSE] # ordering here
+  TE1 <- TE1[c(y1, y2), c(y1, y2), drop = FALSE] 
   TD1 <- as.matrix(forceSymmetric(Matrix(TH), "L"))
-  TD1 <- TD1[c(x1, x2), c(x1, x2), drop = FALSE] # ordering here
+  TD1 <- TD1[c(x1, x2), c(x1, x2), drop = FALSE] 
   PS1 <- as.matrix(forceSymmetric(Matrix(PS), "L"))
-  PS1 <- PS1[latEnd, latEnd, drop = FALSE] # ordering here
+  dimnames(PS1) <- dimnames(PS)
+  PS1 <- PS1[latEnd, latEnd, drop = FALSE] 
   
   dv <- c(y1, y2, x2)
   
-  if (higher_order == TRUE){ # Eta2
+  if (higher_order == TRUE){ 
     
     dv <- c(n2, y1, y2, x2)
     
@@ -204,12 +205,12 @@ miivs <- function(model, miivs.out = FALSE) {
     dv2 <- fof
   }
 
-  # start with first order
+
   eqns <- list(DVobs = "", DVlat = "", IVobs = "", IVlat = "", EQtype = "",
                CD = "", TE = "", PIV = "", IV = "", W = "", NOTE = "")
   eqns <- replicate(length(dv), eqns, simplify = FALSE)
   
-  # predictors
+
   for (i in 1:length(dv)){
     
     eqns[[i]]$DVobs <- dv[i]
@@ -222,67 +223,53 @@ miivs <- function(model, miivs.out = FALSE) {
             eqns[[i]]$IVlat <- colnames(tmp)[which(tmp[1,] != 0)]
             eqns[[i]]$IVobs <- n1names[n1names$lat == eqns[[i]]$IVlat, "obs"]
             
-            
-            # Composite disturbance search: adds predictor's (ov) error
             for ( m in 1:length(eqns[[i]]$IVobs)){
               c2 <- eqns[[i]]$IVobs[m]
               eqns[[i]]$CD <- c(eqns[[i]]$CD, c2)
               eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
-              #eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
             }
             
-            # Composite disturbance search: adds dependent's (ov) error
-            # only direct
             for ( m in 1:length(eqns[[i]]$DVobs)){
               c2 <- eqns[[i]]$DVobs[m]
               eqns[[i]]$CD <- c(eqns[[i]]$CD, c2)
               eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
             }
             
-            # Composite disturbance search: adds dependent's (lv) error
+
             for ( m in 1:length(eqns[[i]]$DVlat)){
               c2 <- eqns[[i]]$DVlat[m]
               eqns[[i]]$CD <- c(eqns[[i]]$CD, c2)
               eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
             }
-            
-            # Add disturbance from higher-orders first order scaling ind.
-            # temp fix
+      
             for ( m in 1:length(eqns[[i]]$DVlat)){
               c2 <- setdiff(latExo,n2names$lat)
               eqns[[i]]$CD <- c(eqns[[i]]$CD, c2)
               eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
             }
            
-        } # end n2
+        } 
     
     
         if (eqns[[i]]$DVobs %in% y1) {
             eqns[[i]]$EQtype <- "y1"
             eqns[[i]]$DVlat <- y1names[y1names$obs == dv[i], "lat"]
             
-            # predictors (search BA1)
             tmp <- BA1[rownames(BA1) %in% eqns[[i]]$DVlat,, drop=FALSE]
             eqns[[i]]$IVlat <- colnames(tmp)[which(tmp[1,] != 0)]
             
-            # predictors (search GA1)
             tmp <- GA1[which(rownames(GA1) %in% eqns[[i]]$DVlat),,drop=FALSE]
             tmp <- colnames(tmp)[which(tmp[1,] != 0)]
             eqns[[i]]$IVlat <- c(eqns[[i]]$IVlat,tmp)
             eqns[[i]]$IVlat <- eqns[[i]]$IVlat[eqns[[i]]$IVlat != ""]
             
-            # Composite disturbance search: adds predictor's (ov) error
             for ( m in 1:length(eqns[[i]]$IVlat)){
               z <- eqns[[i]]$IVlat[m]
                 if (z %in% y1names$lat){
                   c2 <- y1names[y1names$lat == z, "obs"]
-                  #tmp <- TE1[which(rownames(TE1) %in% z2),,drop=FALSE]
-                  #c2 <- colnames(tmp)[which(tmp[1,] != 0)]
                 }
                 if (z %in% x1names$lat){
                   c2 <- x1names[x1names$lat == z, "obs"]
-                  #tmp <- TD1[which(rownames(TD1) %in% z2),,drop=FALSE]
-                  #c2 <- colnames(tmp)[which(tmp[1,] != 0)]
                 }
               eqns[[i]]$IVobs <- c(eqns[[i]]$IVobs, c2)
               eqns[[i]]$IVobs <- eqns[[i]]$IVobs[eqns[[i]]$IVobs!=""]
@@ -290,42 +277,33 @@ miivs <- function(model, miivs.out = FALSE) {
               eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
             }
             
-            # Composite disturbance search: adds dependent's (ov) error
-            # only direct
             for ( m in 1:length(eqns[[i]]$DVobs)){
               c2 <- eqns[[i]]$DVobs[m]
               eqns[[i]]$CD <- c(eqns[[i]]$CD, c2)
               eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
             }
             
-            # Composite disturbance search: adds dependent's (lv) error
             for ( m in 1:length(eqns[[i]]$DVlat)){
               c2 <- eqns[[i]]$DVlat[m]
               eqns[[i]]$CD <- c(eqns[[i]]$CD, c2)
               eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
             }
-          } # end y1
+          } 
     
         if (eqns[[i]]$DVobs %in% y2) {
             eqns[[i]]$EQtype <- "y2"
             eqns[[i]]$DVlat <- NA
              
-            # predictors (search LY2)
             tmp <- LY2[which(rownames(LY2) %in% eqns[[i]]$DVobs),,drop=FALSE]
             eqns[[i]]$IVlat <- colnames(tmp)[which(tmp[1,] != 0)]
             
-            # Composite disturbance search: adds predictor's (ov) error
             for ( m in 1:length(eqns[[i]]$IVlat)){
               z <- eqns[[i]]$IVlat[m]
                 if (z %in% y1names$lat){
                   c2 <- y1names[y1names$lat == z, "obs"]
-                  #tmp <- TE1[which(rownames(TE1) %in% z2),,drop=FALSE]
-                  #c2 <- colnames(tmp)[which(tmp[1,] != 0)]
                 }
                 if (z %in% x1names$lat){
                   c2 <- x1names[x1names$lat == z, "obs"]
-                  #tmp <- TD1[which(rownames(TD1) %in% z2),,drop=FALSE]
-                  #c2 <- colnames(tmp)[which(tmp[1,] != 0)]
                 }
               eqns[[i]]$IVobs <- c(eqns[[i]]$IVobs, c2)
               eqns[[i]]$IVobs <- eqns[[i]]$IVobs[eqns[[i]]$IVobs!=""]
@@ -333,25 +311,22 @@ miivs <- function(model, miivs.out = FALSE) {
               eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
             }
             
-            # Composite disturbance search: adds dependent's (ov) error
             for ( m in 1:length(eqns[[i]]$DVobs)){
               c2 <- eqns[[i]]$DVobs[m]
               eqns[[i]]$CD <- c(eqns[[i]]$CD, c2)
               eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
             }
             
-        } # end y2
+        } 
     
         if (eqns[[i]]$DVobs %in% x2) {
             eqns[[i]]$EQtype <- "x2"
             eqns[[i]]$DVlat = NA
             
-            # predictors (search LX2)
             tmp <- LX2[which(rownames(LX2) %in% eqns[[i]]$DVobs),,drop=FALSE]
             eqns[[i]]$IVlat <- colnames(tmp)[which(tmp[1,] != 0)]
             eqns[[i]]$IVobs <- x1names[x1names$lat == eqns[[i]]$IVlat, "obs"]
            
-            # Search the theta delta and theta epsilon
             for ( m in 1:length(eqns[[i]]$IVlat)){
               z <- eqns[[i]]$IVlat[m]
                 if (z %in% y1names$lat){
@@ -362,25 +337,21 @@ miivs <- function(model, miivs.out = FALSE) {
                   z2 <- x1names[x1names$lat == z, "obs"]
                   c2 <- c(eqns[[i]]$DVobs, z2)
                 }
-              
-              #eqns[[i]]$IVobs <- c(eqns[[i]]$IVobs, z2)
-              #eqns[[i]]$IVobs <- eqns[[i]]$IVobs[eqns[[i]]$IVobs!=""]
               eqns[[i]]$CD <- c(eqns[[i]]$CD, c2)
               eqns[[i]]$CD <- eqns[[i]]$CD[eqns[[i]]$CD!=""]
             }
-        } # end x2
+        } 
     
   }
 
-  # Total Effects
+
   if (higher_order == FALSE){
     if (is.null(inspect(fit)$beta)) {
-      #TE_on_y1 <- solve(diag(nrow(BA1)) - BA1) # total effects on y1
-      TE_on_y2 <- LY2 #%*% TE_on_y1 # total effects on y2
+      TE_on_y2 <- LY2 
     }
     if (!is.null(inspect(fit)$beta)) {
-      TE_on_y1 <- solve(diag(nrow(BA1)) - BA1) # total effects on y1
-      TE_on_y2 <- LY2 %*% TE_on_y1 # total effects on y2
+      TE_on_y1 <- solve(diag(nrow(BA1)) - BA1) 
+      TE_on_y2 <- LY2 %*% TE_on_y1 
     }
   }
   
@@ -391,33 +362,24 @@ miivs <- function(model, miivs.out = FALSE) {
 
   for (i in 1:length(eqns)){
     
-    # total effects on n2
     if (eqns[[i]]$EQtype == "n2") {
-      # add uniqueness from dependent vars
       eqns[[i]]$TE <- eqns[[i]]$DVobs
-      # add latent disturbance from predictor and dep. vars
       tmp <- TE_on_n2[which(rownames(TE_on_n2) %in% eqns[[i]]$DVlat),,drop=FALSE]
       t2  <- colnames(tmp)[which(tmp[1,] != 0)]
       eqns[[i]]$TE <- c(eqns[[i]]$TE, t2)
       eqns[[i]]$TE <- eqns[[i]]$TE[eqns[[i]]$TE!=""]
     } # end n2
     
-    # total effects on y1
     if (eqns[[i]]$EQtype == "y1") {
-      # add uniqueness from dependent vars
       eqns[[i]]$TE <- eqns[[i]]$DVobs
-      # add latent disturbance from predictor and dep. vars
       tmp <- TE_on_y1[which(rownames(TE_on_y1) %in% eqns[[i]]$DVlat),,drop=FALSE]
       t2  <- colnames(tmp)[which(tmp[1,] != 0)]
       eqns[[i]]$TE <- c(eqns[[i]]$TE, t2)
       eqns[[i]]$TE <- eqns[[i]]$TE[eqns[[i]]$TE!=""]
     } # end y1
     
-    # total effects on y2
     if (eqns[[i]]$EQtype == "y2") {
-      # add uniqueness from dependent vars
       eqns[[i]]$TE <- eqns[[i]]$DVobs
-      # add latent disturbance from predictor and dep. vars
       tmp <- TE_on_y2[which(rownames(TE_on_y2) %in% eqns[[i]]$DVobs),,drop=FALSE]
       t2  <- colnames(tmp)[which(tmp[1,] != 0)]
       eqns[[i]]$TE <- c(eqns[[i]]$TE, t2)
@@ -426,7 +388,6 @@ miivs <- function(model, miivs.out = FALSE) {
     
     # total effects on x2
     if (eqns[[i]]$EQtype == "x2") {
-      # add uniqueness from dependent vars
       eqns[[i]]$TE <- eqns[[i]]$DVobs
 
       if (higher_order == TRUE){
@@ -438,8 +399,6 @@ miivs <- function(model, miivs.out = FALSE) {
     } # end x2
   }
   
-  # Add effects
-    
   if (higher_order == TRUE)  { add_length <- ncol(ET2)}
   if (higher_order == FALSE & !is.null(inspect(fit)$beta)) {
     add_length <- ncol(GA1)
@@ -462,10 +421,6 @@ miivs <- function(model, miivs.out = FALSE) {
   }
   effects <- append(lapply(eqns, "[", c("DVobs", "TE")), effects)
     
-  # potential instruments for each equation is defined by 
-  # selecting variables that are unaffected  by the disturbances 
-  # or uniquenesses in that equation. 
-  # Potential instruments
   for (i in 1:length(eqns)) {
     C <- unlist(eqns[[i]]$CD)
       for (j in 1:length(effects)) {
@@ -477,18 +432,12 @@ miivs <- function(model, miivs.out = FALSE) {
     eqns[[i]]$PIV <- eqns[[i]]$PIV[eqns[[i]]$PIV != ""]
   }
   
-  # Final instruments
   for (i in 1:length(eqns)) {
     C <- eqns[[i]]$CD
        for (j in 1:length(C)) {
           W <- C[j]
           t2 <- c()
-          
-          #if (W %in% n1){
-          #  tmp <- ET2[which(rownames(ET2) %in% W),,drop=FALSE]
-          #  t2  <- colnames(tmp)[which(tmp[1,] != 0)]
-          #}
-            
+ 
           if (W %in% c(y1, y2)){
             tmp <- TE1[which(rownames(TE1) %in% W),,drop=FALSE]
             t2  <- colnames(tmp)[which(tmp[1,] != 0)]
@@ -505,7 +454,7 @@ miivs <- function(model, miivs.out = FALSE) {
       eqns[[i]]$IV <- setdiff(eqns[[i]]$PIV, eqns[[i]]$W)
   }
   
-   # Final instruments - correlated zetas
+ 
   for (i in 1:length(eqns)) {
     C <- eqns[[i]]$CD
        for (j in 1:length(C)) {
@@ -523,7 +472,7 @@ miivs <- function(model, miivs.out = FALSE) {
   }
    
     
-    # Get list of equality labels (plabels) for non var-cov params
+  
     eq_plabels <- pt[is.na(pt$ustart) & 
                      !is.na(pt$plabel) &
                      pt$mat %in% c("lambda","beta"), 
@@ -532,10 +481,9 @@ miivs <- function(model, miivs.out = FALSE) {
     
     rs <- pt[pt$op == "==", ]
     
-    # remove any extraneous labels from syntax
+
     rs <- rs[!(rs$lhs %in% fix_labels & rs$rhs %in% fix_labels), ]
-     
-    # Create contraints list
+
     constr <- list(DV = "", SET = "", FIX = "", NAME = "")
     constr <- replicate(nrow(rs), constr, simplify = FALSE)
     
