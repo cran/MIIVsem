@@ -403,10 +403,10 @@ miivs <- function(model, miivs.out = FALSE) {
   if (higher_order == FALSE & !is.null(inspect(fit)$beta)) {
     add_length <- ncol(GA1)
   }  
-  if (is.null(inspect(fit)$beta)) {add_length <- NULL}  
+  if (is.null(inspect(fit)$beta)) {add_length <- 0}  
     
   effects <- list(DVobs = "", TE = "")
-  effects <- replicate(length(add_length), effects, simplify = FALSE)
+  effects <- replicate(add_length, effects, simplify = FALSE)
   if (length(effects) > 0 ) {
     for (i in 1:(length(effects))) {
       if (higher_order == TRUE)  { 
@@ -461,18 +461,25 @@ miivs <- function(model, miivs.out = FALSE) {
           W  <- C[j]
           t2 <- c()
           if (W %in% c(latEnd)){
+            
             tmp <- PS1[which(rownames(PS1) %in% W),,drop=FALSE]
             t2  <- colnames(tmp)[which(tmp[1,] != 0)]
+            for (p in 1:length(eqns)) {
+              t3 <- c()
+              tmp <- intersect(t2,eqns[[p]]$CD)
+              if (length(tmp) > 0){ 
+                t3 <- eqns[[p]]$DVobs
+              }
+            eqns[[i]]$W <- c(eqns[[i]]$W, t3) 
+            }
           }
-          eqns[[i]]$W <- c(eqns[[i]]$W, t2)
+          #eqns[[i]]$W <- c(eqns[[i]]$W, t2)
           eqns[[i]]$W <- eqns[[i]]$W[eqns[[i]]$W != ""]
         }
       eqns[[i]]$IV <- setdiff(eqns[[i]]$IV, eqns[[i]]$W)
       eqns[[i]]$IV <- eqns[[i]]$IV[eqns[[i]]$IV != ""]
   }
-   
-    
-  
+
     eq_plabels <- pt[is.na(pt$ustart) & 
                      !is.na(pt$plabel) &
                      pt$mat %in% c("lambda","beta"), 

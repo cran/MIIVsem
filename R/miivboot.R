@@ -14,6 +14,13 @@ miivboot <- function(d, dat, restrictions, data, bootstrap.se, reps, R, L, B) {
     
   }
   
+  if (!is.null(bootstrap.se) & !(bootstrap.se %in% c("pairs", "residual"))){  
+    
+    stop(paste("MIIVsem only supports the pairs and residual bootstrapping 
+                procedures."))
+    
+  }
+  
   if(restrictions == FALSE & bootstrap.se == "residual"){
   
   for (i in 1:length(d)){
