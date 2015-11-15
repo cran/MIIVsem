@@ -16,8 +16,6 @@
 #'   \item x1. natural log of GNP per capita, 1960
 #'   \item x2. natural log of energy consumption per capita, 1960
 #'   \item x3. arcsin of square root of percentage of labor force in industry, 1960
-
-
 #' }
 #'
 #' @docType data

@@ -211,7 +211,7 @@ miivs <- function(model, miivs.out = FALSE) {
   eqns <- replicate(length(dv), eqns, simplify = FALSE)
   
 
-  for (i in 1:length(dv)){
+  for (i in 1:length(dv)){ # i =5
     
     eqns[[i]]$DVobs <- dv[i]
     
@@ -290,14 +290,14 @@ miivs <- function(model, miivs.out = FALSE) {
             }
           } 
     
-        if (eqns[[i]]$DVobs %in% y2) {
+        if (eqns[[i]]$DVobs %in% y2) { # i =5
             eqns[[i]]$EQtype <- "y2"
             eqns[[i]]$DVlat <- NA
              
             tmp <- LY2[which(rownames(LY2) %in% eqns[[i]]$DVobs),,drop=FALSE]
             eqns[[i]]$IVlat <- colnames(tmp)[which(tmp[1,] != 0)]
             
-            for ( m in 1:length(eqns[[i]]$IVlat)){
+            for ( m in 1:length(eqns[[i]]$IVlat)){ # m =1
               z <- eqns[[i]]$IVlat[m]
                 if (z %in% y1names$lat){
                   c2 <- y1names[y1names$lat == z, "obs"]
@@ -370,7 +370,7 @@ miivs <- function(model, miivs.out = FALSE) {
       eqns[[i]]$TE <- eqns[[i]]$TE[eqns[[i]]$TE!=""]
     } # end n2
     
-    if (eqns[[i]]$EQtype == "y1") {
+    if (eqns[[i]]$EQtype == "y1") { # i =1
       eqns[[i]]$TE <- eqns[[i]]$DVobs
       tmp <- TE_on_y1[which(rownames(TE_on_y1) %in% eqns[[i]]$DVlat),,drop=FALSE]
       t2  <- colnames(tmp)[which(tmp[1,] != 0)]
@@ -378,7 +378,7 @@ miivs <- function(model, miivs.out = FALSE) {
       eqns[[i]]$TE <- eqns[[i]]$TE[eqns[[i]]$TE!=""]
     } # end y1
     
-    if (eqns[[i]]$EQtype == "y2") {
+    if (eqns[[i]]$EQtype == "y2") { # i =5
       eqns[[i]]$TE <- eqns[[i]]$DVobs
       tmp <- TE_on_y2[which(rownames(TE_on_y2) %in% eqns[[i]]$DVobs),,drop=FALSE]
       t2  <- colnames(tmp)[which(tmp[1,] != 0)]
@@ -421,7 +421,7 @@ miivs <- function(model, miivs.out = FALSE) {
   }
   effects <- append(lapply(eqns, "[", c("DVobs", "TE")), effects)
     
-  for (i in 1:length(eqns)) {
+  for (i in 1:length(eqns)) { 
     C <- unlist(eqns[[i]]$CD)
       for (j in 1:length(effects)) {
         E <- unlist(effects[[j]]$TE)
@@ -457,14 +457,15 @@ miivs <- function(model, miivs.out = FALSE) {
  
   for (i in 1:length(eqns)) {
     C <- eqns[[i]]$CD
-       for (j in 1:length(C)) {
+       for (j in 1:length(C)) { 
           W  <- C[j]
           t2 <- c()
           if (W %in% c(latEnd)){
             
             tmp <- PS1[which(rownames(PS1) %in% W),,drop=FALSE]
             t2  <- colnames(tmp)[which(tmp[1,] != 0)]
-            for (p in 1:length(eqns)) {
+            
+            for (p in 1:length(eqns)) { 
               t3 <- c()
               tmp <- intersect(t2,eqns[[p]]$CD)
               if (length(tmp) > 0){ 
@@ -473,13 +474,38 @@ miivs <- function(model, miivs.out = FALSE) {
             eqns[[i]]$W <- c(eqns[[i]]$W, t3) 
             }
           }
-          #eqns[[i]]$W <- c(eqns[[i]]$W, t2)
+        
           eqns[[i]]$W <- eqns[[i]]$W[eqns[[i]]$W != ""]
         }
       eqns[[i]]$IV <- setdiff(eqns[[i]]$IV, eqns[[i]]$W)
       eqns[[i]]$IV <- eqns[[i]]$IV[eqns[[i]]$IV != ""]
   }
 
+    for (i in 1:length(eqns)) { 
+    C <- eqns[[i]]$CD
+       for (j in 1:length(C)) { 
+          W  <- C[j]
+          t2 <- c()
+          if (W %in% c(latEnd)){
+            
+            tmp <- PS1[which(rownames(PS1) %in% W),,drop=FALSE]
+            t2  <- colnames(tmp)[which(tmp[1,] != 0)]
+            
+            for (p in 1:length(effects)) { 
+              t3 <- c()
+              tmp <- intersect(t2,effects[[p]]$TE)
+              if (length(tmp) > 0){ 
+                t3 <- effects[[p]]$DVobs
+              }
+            eqns[[i]]$W <- c(eqns[[i]]$W, t3) 
+            }
+          }
+          
+          eqns[[i]]$W <- eqns[[i]]$W[eqns[[i]]$W != ""]
+        }
+      eqns[[i]]$IV <- setdiff(eqns[[i]]$IV, eqns[[i]]$W)
+      eqns[[i]]$IV <- eqns[[i]]$IV[eqns[[i]]$IV != ""]
+  }
     eq_plabels <- pt[is.na(pt$ustart) & 
                      !is.na(pt$plabel) &
                      pt$mat %in% c("lambda","beta"), 
