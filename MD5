@@ -1,9 +1,9 @@
-8208c166d76508b27f967e28d005d532 *DESCRIPTION
+e50bae24339dfa442a9e4230e0a94423 *DESCRIPTION
 2c5e2ef7b1db6c1d41c30cfdd29e423a *NAMESPACE
 7350ce4a451fe1a10f1b9a2abb0abdf5 *R/MIIVsem-data.R
 11c39e28e1f0f2b78e39d2ac9118f22b *R/MIIVsem.R
 5ed3b711ca8d7b6ad1ac99be9a8de6fd *R/miivboot.R
-dd9be8e25e768f3a9c0d460ecfe3a3bd *R/miive.R
+8fe16c82883adf94eb291c3da3064049 *R/miive.R
 0b829cb97c4a7700e3ce53062d15a6cb *R/miivs.R
 b53bd56adc8e19c35e1356a53ab8e9bc *R/print.miive.R
 295b7812981d7268613bea5094c609a4 *R/print.miivs.R

@@ -549,7 +549,7 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
 
   lavsyntax <- NULL
   if (!is.null(varcov)){
-    
+   
     estimator <- varcov
     
     fit <- lavaan(model, 
@@ -566,20 +566,22 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
       iv  <- dat[i,"EV"]
       est <- dat[i,"Estimate"]
 
-      for (m in 1:length(ls[[1]])){
-        line <- ls[[1]][m]
+      for (m in 1:length(ls[[1]])){ 
+        line <- ls[[1]][m] 
           if (grepl("=~", line)){
             line <- strsplit(line, "=~")
-              if (grepl(iv, line[[1]][1]) & 
-                  grepl(dv, line[[1]][2])){
-              ls[[1]][m] <- paste(iv, " =~ ", est, "*", dv,sep="")
+            
+              if (iv == gsub(".*\\*","",line[[1]][1]) & 
+                  dv == gsub(".*\\*","",line[[1]][2])){
+                ls[[1]][m] <- paste(iv, " =~ ", est, "*", dv,sep="")
               }
           }
           if (grepl(" ~ ", line)){
             line <- strsplit(line, "~")
-              if (grepl(iv, line[[1]][2]) & 
-                  grepl(dv, line[[1]][1])){
-              ls[[1]][m] <- paste(dv, " =~ ", est, "*", iv,sep="")
+    
+              if (iv == gsub(".*\\*","",line[[1]][1]) & 
+                  dv == gsub(".*\\*","",line[[1]][2])){
+                  ls[[1]][m] <- paste(iv, " ~ ", est, "*", dv,sep="")
               }
           }
           if (grepl("==", line)){
