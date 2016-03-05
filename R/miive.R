@@ -200,7 +200,7 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
     }
     if (length(eqns_not_to_estimate) > 0){d <- d[-eqns_not_to_estimate]}
   } 
- 
+
 
   optim <- function(d, overid, data){
     for (i in 1:length(d)){
@@ -287,12 +287,13 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
       d[[i]]$IVobsInt <- c(paste(d[[i]]$DVobs,"_Int", sep= ""), d[[i]]$IVobs)
     }
     
-    y1 = as(Matrix(y1), "dgeMatrix")
-    X1 = as(Matrix(X1), "sparseMatrix")
-    Y1 = as(Matrix(Y1), "sparseMatrix")
+    y1 <- as(Matrix(y1), "dgeMatrix")
+    X1 <- as(Matrix(X1), "sparseMatrix")
+    Y1 <- as(Matrix(Y1), "sparseMatrix")
     
     X1inv    <- solve(crossprod(X1)) 
     Y1hat    <- X1%*% X1inv %*% t(X1)%*%Y1
+    
     if (restrictions == TRUE){
       b <- solve(rbind(cbind(as.matrix(t(Y1hat) %*% Y1hat), t(R)), cbind(R, matrix(0, 
            ncol=nrow(R), nrow=nrow(R))))) %*% rbind(as.matrix(t(Y1hat) %*% y1), L)
@@ -404,7 +405,7 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
     S.MI      <- crossprod(V.r) / N
     S.OB      <- as(cov(data[, unlist(dvs), drop = FALSE]), "Matrix")
     S.RS      <- S.OB - S.MI
-    u.hat     <- bdiag(split(t(E[,dvs]),1:ncol(E[,dvs])))# for sarg.
+    u.hat     <- bdiag(split(t(E[,dvs]),1:ncol(E[,dvs, drop = FALSE])))# for sarg.
     P.z       <- X1 %*% X1inv %*% t(X1)
     srg       <- diag(crossprod(u.hat,P.z) %*% u.hat / (crossprod(u.hat)/ N))
     srg.df    <- unlist(lapply(d, function(x) length(x$IV) - length(x$IVobs)))
@@ -432,7 +433,8 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
     
     if (restrictions == FALSE){
       I     <- Diagonal(N)
-      omega <- solve(kronecker(diag(diag(S.EE[unlist(dvs),unlist(dvs)])), I))
+      omega <- solve(kronecker(diag(diag(S.EE[unlist(dvs),unlist(dvs), drop = FALSE]),
+                                    nrow = length(dvs), ncol = length(dvs)), I))
       S.EEr <- as.matrix(solve(t(Y1hat) %*% omega %*% Y1hat))
       rownames(S.EEr) <- b$iv
       b$se <- cbind(sqrt(diag(S.EEr)))
@@ -518,12 +520,20 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
     d[[i]]$EST <- b[b$dv == d[[i]]$DVobs, "b"]
   }
   
-  for (i in 1:length(d)){ # error
+  for (i in 1:length(d)){ # i =1
     
     if (d[[i]]$NOTE != "") {
       olddf <- b[b$eq == i & !is.na(b$srg.df),]$srg.df  
       newdf <- paste(olddf,"*",sep="")
       b[b$eq == i & !is.na(b$srg.df),]$srg.df <- newdf
+    }
+    
+    if (covariance == FALSE){
+      if (b[b$eq == i & !is.na(b$srg.df),]$srg.df == 0) {
+        b[b$eq == i & !is.na(b$srg.df),]$srg    <- NA
+        b[b$eq == i & !is.na(b$srg.df),]$srg.p  <- NA
+        b[b$eq == i & !is.na(b$srg.df),]$srg.df <- NA
+      }
     }
     
     if (!any(is.na(d[[i]]$IVlat))) {
