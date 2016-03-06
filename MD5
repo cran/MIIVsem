@@ -1,11 +1,11 @@
-e65e724920d828708cf20a05f3a24953 *DESCRIPTION
+29bb8ce83647fa259fbe18b53bee3e17 *DESCRIPTION
 2c5e2ef7b1db6c1d41c30cfdd29e423a *NAMESPACE
 7350ce4a451fe1a10f1b9a2abb0abdf5 *R/MIIVsem-data.R
 773bef5d8e1d26a62cc92685954adc8e *R/MIIVsem.R
 5ed3b711ca8d7b6ad1ac99be9a8de6fd *R/miivboot.R
-4ffb3cf922e54fa22b344aa833b28fdb *R/miive.R
-7aa1cfe5744105af829401676242d2b1 *R/miivs.R
-b53bd56adc8e19c35e1356a53ab8e9bc *R/print.miive.R
+2d39384b4b704a032ac8319cc7a10172 *R/miive.R
+49df68f9da824b2d80aeeb32f193db16 *R/miivs.R
+e95337222a87f747223a49e4c8a88688 *R/print.miive.R
 295b7812981d7268613bea5094c609a4 *R/print.miivs.R
 dfac0791303c77465b303453b20aee03 *data/bollen1989a.rda
 ea3ca9eec4546fe869577df45ec08b39 *man/MIIVsem.Rd
