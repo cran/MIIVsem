@@ -293,7 +293,7 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
     Y1 <- as(Matrix(Y1), "sparseMatrix")
     
     X1inv    <- solve(crossprod(X1)) 
-    Y1hat    <- X1%*% X1inv %*% t(X1)%*%Y1
+    Y1hat    <- X1%*% (X1inv %*% (t(X1) %*% Y1))
     
     if (restrictions == TRUE){
       b <- solve(rbind(cbind(as.matrix(t(Y1hat) %*% Y1hat), t(R)), cbind(R, matrix(0, 
@@ -405,8 +405,9 @@ miive <- function(model = model, data = NULL, overid = NULL, varcov = NULL,
     S.OB      <- as(cov(data[, unlist(dvs), drop = FALSE]), "Matrix")
     S.RS      <- S.OB - S.MI
     u.hat     <- bdiag(split(t(E[,dvs]),1:ncol(E[,dvs, drop = FALSE])))# for sarg.
-    P.z       <- X1 %*% X1inv %*% t(X1)
-    srg       <- diag(crossprod(u.hat,P.z) %*% u.hat / (crossprod(u.hat)/ N))
+    ##P.z       <- X1 %*% X1inv %*% t(X1)
+    ##srg       <- diag(crossprod(u.hat,P.z) %*% u.hat / (crossprod(u.hat)/ N))
+    srg       <- diag(t(u.hat) %*% (X1 %*% (X1inv %*% (t(X1) %*% u.hat))) / (crossprod(u.hat)/ N) )
     srg.df    <- unlist(lapply(d, function(x) length(x$IV) - length(x$IVobs)))
     srg       <- data.frame(srg.df, srg)
     srg$srg.p <- apply(srg, 1, function(x)  1 - pchisq(x[2] ,df = x[1]))

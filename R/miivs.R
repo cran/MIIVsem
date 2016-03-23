@@ -61,8 +61,6 @@ miivs <- function(model, miivs.out = FALSE) {
     stop(paste("Enter numerical constraints using labels."))
   }
   
-
-  
   hof <- unique(pt[pt$op == "=~" & pt$rhs %in% pt[pt$op == "=~", "lhs"],"lhs"])
   
   if (length(hof) > 0) {higher_order <- TRUE} else {higher_order <- FALSE}
@@ -446,6 +444,10 @@ miivs <- function(model, miivs.out = FALSE) {
   }  
   if (is.null(inspect(fit)$beta))   {add_length <- 0}
   if (nrow(LY2) < 1) {add_length <- 0}
+  
+  if (higher_order == FALSE & is.null(inspect(fit)$beta)) {
+    add_length <- length(x1)
+  }  
     
   effects <- list(DVobs = "", TE = "")
   effects <- replicate(add_length, effects, simplify = FALSE)
@@ -466,6 +468,20 @@ miivs <- function(model, miivs.out = FALSE) {
   for (i in 1:length(eqns)) { 
     eqns[[i]]$PIV <- lavNames(fit, type = "ov.x")
     eqns[[i]]$PIV <- eqns[[i]]$PIV[eqns[[i]]$PIV != ""]
+  }
+  
+  # add higher order observed to MIIVs
+  # needs to be expanded for multiple higher order MIIVs
+  if (higher_order == TRUE)  { 
+    obs_sof <- n1names$obs
+    for (k in 1:length(obs_sof)){
+      for (i in 1:length(eqns)) { 
+        if (!(obs_sof[k] %in%  eqns[[i]]$IVobs) & !(obs_sof[k] %in%  eqns[[i]]$CD)) {
+          eqns[[i]]$PIV <- c(eqns[[i]]$PIV,  obs_sof[k])
+          eqns[[i]]$PIV <- eqns[[i]]$PIV[eqns[[i]]$PIV != ""]
+        }
+      }
+    }
   }
 
   for (i in 1:length(eqns)) { 
