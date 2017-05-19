@@ -1,622 +1,775 @@
 #' Model-implied instrumental variable (MIIV) estimation
 #'
-#' Estimate SEM models using model-implied instrumental variables (MIIVs).
+#' Estimate structural equation models using model-implied instrumental 
+#' variables (MIIVs).
 #'
-#' @param model A model specified using lavaan model syntax. See the \code{model} argument within the \code{\link[lavaan]{lavaanify}} function for more information.
-#' @param data A data frame, list or environment or an object coercible by as.data.frame to data frame.
-#' @param instruments A user-supplied list of valid MIIVs for each equation. See Example 2 below. 
-#' @param estimator Options \code{"2SLS"} or \code{"GMM"} for estimating the model parameters. Default is \code{"2SLS"}.
-#' @param wininitial Options \code{"identity"} or \code{"2SLS"} for the first stage weight matrix. Default is \code{"2SLS"}.
-#' @param wmatrix Options \code{"unadjusted"} or \code{"robust"} for the second stage weight matrix. Default is \code{"unadjusted"}.
-#' @param overid A user-specified degree of overidentification (\code{overid}). See Example 3 below. 
-#' @param print.miivs A logical indicating whether or not to display MIIVs in output.
-#' @param varcov Option for estimating conditional variance and coavariance paramaters. Default is \code{NULL}.
-#' @param bootstrap.se Options \code{"pairs"} or \code{"residual"} for obtaining bootstrap standard errors, t-tests, and bootstrap P values. Default is \code{NULL}.
-#' @param cov A named numeric matrix. Default is \code{NULL}.
-#' @param means A sample mean vector. Default is \code{NULL}.
-#' @param N Numeric. The number of observations in the sample. Default is \code{NULL}.
-#' @param tests A boolean indicating whether parameter and model tests are to be calculated. Default is \code{TRUE}
-#'
-#' @return model
-#' @return dat
-#' @return modeeqns
-#' 
+#' @param model A model specified using lavaan model syntax or a
+#'        \code{\link{miivs}} object returned by the \code{\link{miivs}}
+#'        function. See Details for more information about permissible
+#'        operators and example model syntax.
+#' @param data A data frame, list or environment or an object coercible 
+#'        by \code{as.data.frame} to data frame. The most common 
+#'        application is to supply a data.frame.
+#' @param instruments This allows user to specify the instruments for 
+#'        each equation. See Details and the \code{miivs.out} argument of 
+#'        \code{\link{summary.miivs}} for more information on the correct 
+#'        input format. External (auxiliary) instruments can be 
+#'        supplied, however, the \code{miiv.check} argument must
+#'        be set to \code{FALSE}. In the typical application, the program 
+#'        will choose the MIIVs for each equation based on the model 
+#'        specification. To view the model implied instruments after 
+#'        estimation see the \code{eq.info} argument of 
+#'         \code{\link{summary.miive}}.
+#' @param sample.cov Numeric matrix. A sample variance-covariance 
+#'        matrix. The rownames and colnames attributes must contain all
+#'        the observed variable names indicated in the model syntax.
+#' @param sample.mean A sample mean vector. If \code{sample.cov} is provided
+#'        and the \code{sample.mean} argument is \code{NULL}, intercepts
+#'        for all endogenous variables will not be estimated. 
+#' @param sample.nobs Number of observations in the full data frame.
+#' @param sample.cov.rescale If \code{TRUE}, the sample covariance matrix
+#'        provided by the user is internally rescaled by multiplying 
+#'        it with a factor (N-1)/N.
+#' @param estimator Options \code{"2SLS"} or \code{"GMM"} for estimating the
+#'        model parameters. Default is \code{"2SLS"}. Currently, only 
+#'        \code{2SLS} is supported.
+#' @param est.only If \code{TRUE}, only the coefficients are returned.
+#' @param var.cov If \code{TRUE}, variance and covariance parameters are
+#'        estimated.
+#' @param se If "standard", asymptotic standard errors are
+#'        computed. If \code{"bootstrap"} (or \code{"boot"}), bootstrap 
+#'        standard errors are computed.
+#' @param bootstrap Number of bootstrap draws, if bootstrapping is used. The
+#'        default is \code{1000}
+#' @param boot.ci Method for calculating bootstrap confidence intervals. 
+#'        Options are normal approximation (\code{"norm"}), basic bootstrap 
+#'        interval (\code{"basic"}), percentile interval (\code{"perc"}), 
+#'        and adjusted bootstrap percentile (\code{"bca"}). The default is 
+#'        normal approximation. See \code{\link[boot]{boot.ci}} for more 
+#'        information. 
+#' @param missing Default is \code{"listwise"} however, a maximum likelihood 
+#'        related missing data method called \code{"twostage"} is 
+#'        also available. See Details below  on \code{missing} for more 
+#'        information.
+#' @param miiv.check Default is \code{TRUE}. \code{miiv.check} provides a 
+#'        check to determine whether user-upplied instruments are implied
+#'        by the model specification (e.g. valid MIIVs). When auxiliary or 
+#'        external instruments are provided \code{miiv.check} should be 
+#'        set to \code{FALSE}. 
+#' @param ordered A vector of variable names to be treated as ordered factors
+#'        in generating the polychoric correlation matrix and subsequent PIV
+#'        estimates. See details on \code{ordered} below for more information.
+#' @param sarg.adjust Adjusment methods used to adjust the p-values associated
+#'        with the Sargan test due to multiple comparisons. Defaults is 
+#'        \code{none}. For options see \code{\link[stats]{p.adjust}}.
 #' @details 
+#' 
 #' \itemize{
-#' \item{\code{overid}} {If the user-specified degree of overidentification (\code{overid}) exceeds the number of available MIIVs for a given equation, the maximum number of MIIVs will be used instead.  In this case, the \code{df} column for any equations in which the degrees of freedom for the \code{Sargan} test are less than the \code{overid} value will be appended with an \code{*}. A note will also  be displayed to alert the user to the changes. In the example below, the \code{overid} parameter is set to 2, however the \code{y1} equation has only 1 additional MIIV avaialable.}
-#' \item{\code{instruments}} {Using the \code{instruments} option you can specify the MIIVs directly for each equation in the model.  To utilize this option you must first define a list of instruments using the syntax displayed below. After the list is defined, set the \code{instruments} argument equal to the name of the list of MIIVs. Note, \code{instruments} are specified for an equation, and not for a specific endogenous variable.}
-#' \item{\code{varcov}} {Currently, only \code{"ML"} and \code{"ULS"} fitting functions are supported through the \code{\link[lavaan]{lavaan}} package.}
-#' \item{\code{bootstrap.se}} {Currently, only \code{"pairs"} and \code{"residual"} unrestricted bootstrap are implemented using 999 bootstrap repititions.}
-#' \item {Equality Constraints} Users can specify equality constraints directly using labels in the model syntax.  See Example 4 below. 
+#' \item{\code{model}} {
+#' 
+#'   The following model syntax operators are currently supported: =~,
+#'   ~, ~~ and *. See below for details on default behavior, descriptions 
+#'   of how to specify the scaling indicator in latent variable models, 
+#'   and how to impose equality constraints on the parameter estimates. 
+#'   
+#'   \strong{Example using Syntax Operators}
+#'   
+#'   In the model below, 'L1 =~ Z1 + Z2 + Z3'  indicates the latent variable L1
+#'   is measured by 3 indicators, Z1, Z2, and Z3. Likewise, L2 is measured by 3
+#'   indicators, Z4, Z5, and Z6. The statement 'L1 ~ L2' specifies latent
+#'   variable L1 is regressed on latent variable L2. 'Z1 ~~ Z2' indicates the
+#'   error of Z2 is allowed to covary with the error of Z3. The label LA3
+#'   appended to Z3 and Z6 in the measurement model constrains the factor
+#'   loadings for Z3 and Z6 to equality. For additional details on constraints
+#'   see Equality Constraints  and Parameter Restrictions.
+#'   
+#'   \preformatted{model <- '
+#'      L1 =~ Z1 + Z2 + LA3*Z3
+#'      L2 =~ Z4 + Z5 + LA3*Z6
+#'      L1  ~ L2
+#'      Z2 ~~ Z3
+#'   '}
+#'  
+#'   \strong{Scaling Indicators}
+#'   
+#'   Following the \pkg{lavaan} model syntax, latent variables are defined using
+#'   the =~ operator.  For first order factors, the scaling indicator chosen is
+#'   the first observed variable on the RHS of an equation. For the model  below
+#'   \code{Z1} would be chosen as the scaling indicator for \code{L1} and
+#'   \code{Z4} would be chosen as the scaling indicator for \code{L2}.
+#'   
+#'   \preformatted{model <- '
+#'      L1 =~ Z1 + Z2 + Z3
+#'      L2 =~ Z4 + Z5 + Z6
+#'   '}
+#'   
+#'   \strong{Equality Constraints and Parameter Restrictions}
+#'   
+#'   Within- and across-equation equality constraints on the factor loading and
+#'   regression coefficients can be imposed directly in the model syntax. To
+#'   specify equality constraints between different parameters equivalent labels
+#'   should be prepended to the variable name using the * operator. For example,
+#'   we could constrain the factor loadings for the two non-scaling indicators
+#'   of \code{L1} to equality using the following  model syntax.
+#'   
+#'   \preformatted{model <- '
+#'      L1 =~ Z1 + LA2*Z2 + LA2*Z3
+#'      L2 =~ Z4 + Z5 + Z6
+#'   '}
+#'   
+#'   Researchers also can constrain the factor loading and regression 
+#'   coefficients to specific numeric values in a similar fashion. Below we
+#'   constrain the regression coefficient  of \code{L1} on \code{L2} to
+#'   \code{1}.
+#'   
+#'   \preformatted{model <- '
+#'      L1 =~ Z1 + Z2 + Z3
+#'      L2 =~ Z4 + Z5 + Z6
+#'      L3 =~ Z7 + Z8 + Z9
+#'      L1  ~ 1*L2 + L3
+#'   '}
+#'
+#'   \strong{Higher-order Factor Models}
+#'   
+#'   For example, in the model below, the  scaling indicator for the 
+#'   higher-order factor \code{H1} is taken to be \code{Z1}, the scaling 
+#'   indicator that would have been assigned to the first lower-order factor
+#'   \code{L1}. The intercepts for lower-order latent variables are set to zero,
+#'   by default
+#'   
+#'   \preformatted{model <- '
+#'      H1 =~ L1 + L2 + L3
+#'      L1 =~ Z1 + Z2 + Z3
+#'      L2 =~ Z4 + Z5 + Z6
+#'      L3 =~ Z7 + Z8 + Z9
+#'   '}
+#'   
+#'   \strong{Model Defaults}
+#'   
+#'   In addition to those relationships specified in the model syntax 
+#'   \pkg{MIIVsem} will automatically include the intercepts of any observed or
+#'   latent endogenous variable. The intercepts for any scaling indicators and
+#'   lower-order latent variables are set to zero by default. Covariances among
+#'   exogenous latent and observed  variables are included when \code{var.cov =
+#'   TRUE}. Where appropriate the covariances of the errors of latent and
+#'   observed dependent variables are automatically included in the model
+#'   specification. These defaults correspond to those used by \pkg{lavaan} and
+#'   \code{auto = TRUE}, except that endogenous latent variable intercepts are
+#'   estimated by default, and the intercepts of scaling indicators are fixed to
+#'   zero.
+#'   
+#'   
+#'   \strong{Invalid Specifications}
+#'   
+#'   Certain model specifications are not currently supported.  For example, the
+#'   scaling indicator of a latent variable is not permitted to cross-load on
+#'   another latent variable. In the model below \code{Z1}, the scaling
+#'   indicator for L1, cross-loads on the latent variable \code{L2}. Executing a
+#'   search on the model below will result in the warning: \emph{miivs: scaling
+#'   indicators with a factor complexity greater than 1 are not currently
+#'   supported}.
+#'   
+#'   \preformatted{model <- '
+#'     L1 =~ Z1 + Z2 + Z3
+#'     L2 =~ Z4 + Z5 + Z6 + Z1
+#'   '}
+#'   
+#'   In addition, \pkg{MIIVsem} does not currently support relations
+#'   where the scaling indicator of a latent variable is also the 
+#'   dependent variable in a regression equation.  The
+#'   model below would not be valid under the current algorithm.
+#'   
+#'   \preformatted{model <- '
+#'     L1 =~ Z1 + Z2 + Z3
+#'     Z1  ~ Z4
+#'     Z4  ~ Z5 + Z6
+#'   '}
+#'   }
+#'   
+#'   \item{\code{instruments}} {
+#' 
+#'   To utilize this option you must first define a list of instruments using
+#'   the syntax displayed below. Here, the dependent variable for each equation
+#'   is listed on the LHS of the ~ operator. In the case of latent variable
+#'   equations, the dependent variable is the scaling indicator associated with
+#'   that variable. The instruments are then given on the RHS, separated by +
+#'   signs. The instrument syntax is then encloses in single quotes. For example,
+#'   
+#'   \preformatted{customIVs <- '
+#'      y1 ~ z1 + z2 + z3
+#'      y2 ~ z4 + z5
+#'   '
+#'   }
+#'     
+#'   After this list is defined, set the \code{instruments} argument equal to 
+#'   the name of the list of instruments (e.g. \code{customIVs}). Note, that
+#'   \code{instruments} are specified for an equation, and not for a specific
+#'   endogenous variable. If only a subset of dependent variables are listed in
+#'   the instruments argument, only those  equations listed will be estimated. 
+#'   If external or auxiliary instruments (instruments not otherwise included in
+#'   the model) are included the \code{miiv.check} argument should be set to
+#'   \code{FALSE}.
+#'   }
+#'   
+#'   \item{\code{sample.cov}} {
+#'   
+#'   The user may provide a sample covariance matrix in lieu of raw data. The
+#'   rownames and colnames must contain the observed variable names indicated in
+#'   the model syntax. If \code{sample.cov} is not \code{NULL} the user must
+#'   also supply a vector of sample means (\code{sample.mean}), and the number
+#'   of sample observations (\code{sample.nobs}) from which the means and
+#'   covariances were calculated.  If no vector of sample means is provided 
+#'   intercepts will not be estimated. \pkg{MIIVsem} does not support bootstrap 
+#'   standard errors or polychoric instrumental variable estimtation when the
+#'   sample moments, rather than raw data, are used as input.
+#'   }
+#'   
+#'   \item{\code{sample.mean}} {
+#'   
+#'   A vector of length corresponding to the row and column dimensions
+#'   of the \code{sample.cov} matrix.  The names of \code{sample.mean} 
+#'   must match those in the \code{sample.cov}.  If the user supplies a 
+#'   covariance matrix but no vector of sample means intercepts will not 
+#'   be estimated.
+#'   }
+#'   
+#'   \item{\code{sample.cov.rescale}} {
+#'   
+#'   Default is \code{TRUE}.  If the sample covariance matrix provided 
+#'   by the user should be internally rescaled by multiplying it with a 
+#'   factor (N-1)/N.
+#'   }
+#'   
+#'   \item{\code{estimator}} {
+#'   
+#'   The default estimator is \code{2SLS}. For equations with continuous 
+#'   variables only and no restrictions the estimates are identical to those
+#'   described in Bollen (1996, 2001). If restrictions are present a restricted
+#'   MIIV-2SLS estimator is implemented using methods similar to those described
+#'   by Greene (2003) but adapted for moment based estimation. 2SLS coefficients
+#'   and overidentifcation tests are constructed using the sample moments for 
+#'   increased computational efficiency.
+#'   
+#'   If an equation contains ordered categorical variables, declared in the
+#'   \code{ordered} argument, the PIV estimator described by Bollen and
+#'   Maydeu-Olivares (2007) is implemented. The PIV estimator does not currently
+#'   support exogenous observed predictors of endogenous categorical variables. 
+#'   See details of the \code{ordered} argument for more information about the
+#'   PIV estimator.
+#'   }
+#'   
+#'  \item{\code{se}} {
+#'   When \code{se} is set to \code{"boot"} or \code{"bootstrap"} standard 
+#'   errors are computed using a nonparametric bootstrap assuming an independent
+#'   random sample. If \code{var.cov = TRUE} nonceonvergence may occur and any
+#'   datasets with impproper solutions will be recorded as such and discarded.
+#'   Bootstrapping is implemented using the \pkg{boot} by resampling the
+#'   observations in \code{data} and refitting the model with the resampled
+#'   data. The number of bootstrap replications is set using the
+#'   \code{bootstrap} argument, the default is \code{1000}. Here, the standard
+#'   errors are based on the standard deviation of successful bootstrap
+#'   replications.   Note, the Sargan test statistic is calculated from the
+#'   original sample and is not a bootstrap-based estimate. When \code{se} is
+#'   set to \code{"standard"} standard errors for the MIIV-2SLS coefficients are
+#'   calculated using analytic expressions. For equations with categorical
+#'   endogenous variables, the asymptotic distribution of the coefficients is
+#'   obtained via a first order expansion where the matrix of partial
+#'   derivatives is evaluated at the sample polychoric correlations. For some
+#'   details on these standard errors see Bollen & Maydeu-Olivares (2007, p.
+#'   315). If \code{var.cov = TRUE} only point estimates for the variance and 
+#'   covariance estimates are calculated.  To obtain standard errors for the
+#'   variance and covariance parameters we recommend setting \code{se =
+#'   "bootstrap"}. Analytic standard errors for the variance covariance
+#'   parameters accounting for the first stage estimation have been derived and
+#'   will be available in future releases.
+#'   }
+#'   
+#'  \item{\code{missing}} {
+#'   There are two ways to handle missing data in \pkg{MIIVsem}. First, missing 
+#'   data may be handled by listwise deletion (\code{missing = "listwise"}), In
+#'   this case any row of data containing missing observation is excluded from
+#'   the analysis and the sample moments are adjusted accordingly. Estimation
+#'   then proceeds normally. The second option for handling missing data is
+#'   through a two-stage procedures \code{missing = "twostage"} where consistent
+#'   estimates of the saturated populations means and covariance are obtained in
+#'   the first stage. These quantities are often referred to as the "EM means"
+#'   and "EM covariance matrix." In the second stage the saturated estimates are
+#'   used to calculate the MIIV-2SLS structural coefficients. Bootstrap standard
+#'   errors are recommended but will be  computationally burdensome due to the
+#'   cost of calculating the EM-based moments at each bootstrap replication.
+#'   }
+#'  \item{\code{ordered}} {  
+#'   For equations containing ordered categorical variables MIIV-2SLS
+#'   coefficients are estimated using the approach outlined in Bollen
+#'   & Maydeu-Olivares (2007). The asymptotic distribution of the 
+#'   these coefficients is obtained via a first order expansion where 
+#'   the matrix of partial derivatives is evaluated at the sample 
+#'   polychoric correlations. For some details on these
+#'   standard errors see Bollen & Maydeu-Olivares (2007, p. 315). If 
+#'   \code{var.cov = TRUE} only point estimates for the variance and
+#'   covariance estimates are calculated using the \code{DWLS} estimator
+#'   in \pkg{lavaan}. To obtain standard errors for the variance and 
+#'   covariance parameters we recommend the bootstrap approach. 
+#'   Analytic standard errors for the variance covariance parameters 
+#'   in the presence of endogenous categorical variables 
+#'   will be available in future releases. Currently \pkg{MIIVsem}
+#'   does not support exogenous variables in equations with categorical
+#'   endogenous variables.
+#'   }
 #' }
+#' 
+#' \strong{Sargan's Test of Overidentification}  
+#' 
+#' An essential ingredient in the MIIV-2SLS approach is the application of 
+#' overidentification tests when a given model specification leads to an excess
+#' of instruments. Empirically, overidentification tests are used to evalulate
+#' the assumption of orthogonality between the instruments and equation 
+#' residuals. Rejection of the null hypothesis implies a deficit in the logic
+#' leading to the instrument selection. In the context of MIIV-2SLS this is the
+#' model specification itself.  By default, \pkg{MIIVsem} provides Sargan's
+#' overidentification test (Sargan, 1958) for each overidentified equation in
+#' the system. When cross-equation restrictions or missing data are present the 
+#' properties of the test are not known. When the system contains many equations
+#' the \code{sarg.adjust} option provides methods to adjust the p-values
+#' associated with the Sargan test due to multiple comparisons. Defaults is 
+#' \code{none}. For other options see \code{\link[stats]{p.adjust}}.
 #' 
 #' @references 
 #' 
-#' Bollen, K. A. 1996.	An	Alternative	2SLS Estimator	for	Latent	
+#' Bollen, K. A. (1996).	An	Alternative	2SLS Estimator	for	Latent	
 #' Variable	Models.	\emph{Psychometrika}, 61, 109-121.
 #' 
-#' Bollen,	K. A. 2001.	Two-stage	Least	Squares	and	Latent	Variable	Models:	
-#' Simultaneous	Estimation	and	Robustness	to	Misspecifications.
+#' Bollen, K. A. (2001).	Two-stage	Least	Squares	and	Latent	Variable	
+#' Models: Simultaneous	Estimation	and	Robustness	to	Misspecifications.
 #' In	R.	Cudeck,	S.	Du	Toit,	and	D.	Sorbom	(Eds.),	Structural	
 #' Equation	Modeling:	Present	and	Future,	A	Festschrift	in	Honor	of	Karl	
 #' Joreskog	(pp. 119-138).	Lincoln,	IL: Scientific	Software.
 #' 	
-#'
-#' @examples
+#' Bollen, K. A., & Maydeu-Olivares, A. (2007). A Polychoric Instrumental 
+#' Variable (PIV) Estimator for Structural Equation Models with Categorical 
+#' Variables. \emph{Psychometrika}, 72(3), 309.
 #' 
-#' # Example 1
+#' Freedman, D. (1984). On Bootstrapping Two-Stage Least-Squares Estimates 
+#' in Stationary Linear Models. \emph{The Annals of Statistics}, 
+#' 12(3), 827–842. 
 #' 
-#'  bollen1989a_model <- '
-#'
-#'    Eta1 =~ y1 + y2  + y3  + y4  
-#'    Eta2 =~ y5 + y6  + y7  + y8    
-#'    Xi1  =~ x1 + x2 + x3 
-#'
-#'    Eta1 ~ Xi1  
-#'    Eta2 ~ Xi1 
-#'    Eta2 ~ Eta1 
-#'
-#'    y1   ~~ y5
-#'    y2   ~~ y4
-#'    y2   ~~ y6
-#'    y3   ~~ y7
-#'    y4   ~~ y8
-#'    y6   ~~ y8 
-#'  '
-#'  
-#'   miive(model = bollen1989a_model, data = bollen1989a)
-#'  
-#'  
-#' # Example 2
+#' Greene, W. H. (2000). Econometric analysis. Upper Saddle River, N.J: 
+#' Prentice Hall.
 #' 
-#'   my_instruments <- ' 
-#'    y1 ~ x2 + x3                            
-#'    y5 ~ y2 + y3 + y4 + x2                
-#'    y2 ~ y3 + y7 + y8 + x2           
-#'    y3 ~ y2 + y4 + y6 + y8        
-#'    y4 ~ y3 + y6           
-#'    y6 ~ y3 + y4 + y7 + x2            
-#'    y7 ~ y2 + y4 + y6 + y8       
-#'    y8 ~ y2 + y3 + y7 + x2          
-#'    x2 ~ y1 + y5 + y2 + y3 + y4 + y6
-#'    x3 ~ y1 + y5 + y2 + y3 + y4 + y6
-#'  '
-#'  
-#' miive(model = bollen1989a_model, data = bollen1989a, 
-#'       instruments = my_instruments)
-#'  
-#'  
-#' # Example 3
-#'  
-#'  miive(model = bollen1989a_model, data = bollen1989a, overid = 2)
-#'  
-#'  
-#' # Example 4
-#'  bollen1989a_model_r <- '
+#' Hayashi, F. (2000). Econometrics. Princeton, NJ: Princeton University 
+#' Press
+#' 
+#' Sargan, J. D. (1958). The Estimation of Economic Relationships 
+#' using Instrumental Variables. Econometrica, 26(3), 393–415. 
+#' 
+#' Savalei, V. (2010). Expected versus Observed Information in SEM with 
+#' Incomplete Normal and Nonnormal Data. \emph{Psychological Methods}, 
+#' 15(4), 352–367. 
+#' 
+#' Savalei, V., & Falk, C. F. (2014). Robust Two-Stage Approach 
+#' Outperforms Robust Full Information Maximum Likelihood With 
+#' Incomplete Nonnormal Data. \emph{Structural Equation Modeling: 
+#' A Multidisciplinary Journal}, 21(2), 280–302. 
 #'
-#'    Eta1 =~ y1 + l2*y2  + l3*y3  + l4*y4  
-#'    Eta2 =~ y5 + l2*y6  + l3*y7  + l4*y8    
-#'    Xi1  =~ x1 + x2 + l1*x3 
-#'
-#'    Eta1 ~ Xi1  
-#'    Eta2 ~ Xi1 
-#'    Eta2 ~ Eta1 
-#'
-#'    y1   ~~ y5
-#'    y2   ~~ y4
-#'    y2   ~~ y6
-#'    y3   ~~ y7
-#'    y4   ~~ y8
-#'    y6   ~~ y8
-#'    
-#'    # Equality Constraints
-#'    l1   == 0.5
-#'    l2   == l2
-#'    l3   == l3
-#'    l4   == l4 
-#'  '
-#'  
-#'  miive(model = bollen1989a_model_r, data = bollen1989a)
-#'  
+#' @example example/bollen1989-miive1.R
+#' @example example/bollen1989-miive2.R
+#' @example example/bollen1989-miive3.R
+#' 
+#' @seealso \link{MIIVsem}{miivs}
+#' 
+#' @keywords MIIV-2SLS MIIV PIV 2sls tsls instrument SEM two-stage least-squares
 #'  
 #' @export
-miive <- function(model = model, data = NULL, estimator = "2SLS", wininitial = "2SLS",
-                  wmatrix = "unadjusted", overid = NULL, print.miivs = FALSE,
-                  varcov = NULL, bootstrap.se = NULL, instruments = NULL,
-                  cov = NULL, means = NULL, N = NULL, tests = TRUE){
+miive <- function(model = model, 
+                  data = NULL,  
+                  instruments = NULL,
+                  sample.cov = NULL, 
+                  sample.mean = NULL, 
+                  sample.nobs = NULL, 
+                  sample.cov.rescale = TRUE, 
+                  estimator = "2SLS", 
+                  se = "standard", 
+                  bootstrap = 1000L, 
+                  boot.ci = "norm",
+                  missing = "listwise",
+                  est.only = FALSE, 
+                  var.cov = FALSE, 
+                  miiv.check = TRUE, 
+                  ordered = NULL,
+                  sarg.adjust = "none"){
   
+  #-------------------------------------------------------#
+  # In the current release disable "twostage" missing
+  #-------------------------------------------------------#
   
-  if (estimator != "2SLS"){stop(paste("Only 2SLS currently supported."))}
-  if (wininitial != "2SLS"){stop(paste("Only 2SLS currently supported."))}
-  if (wmatrix != "unadjusted"){stop(paste("Only unadjusted wmatrix supported."))}
-  
-  if ( "miivs" == class(model) ){ mod <- model; d <- mod$eqns; } 
-  if ( "miivs" != class(model) ){ mod <- miivs(model); d <- mod$eqns; } 
-  
-  if (is.null(cov)) { covariance = FALSE }
-  if (!is.null(cov)){ covariance = TRUE  }
-  
-  if (covariance == TRUE & !is.null(bootstrap.se)){
-    stop(paste("Bootstrap procedures not supported when using covariance matrix as input."))
-  }
-  if (covariance == TRUE & estimator == "GMM"){
-    stop(paste("GMM estimator not currently supported when using covariance matrix as input."))
-  }
-  if (covariance == TRUE){
-    if (is.null(means)){
-      stop(paste("Must supply a vector of means when using covariance matrix as input."))
-    }
-    if (is.null(N)){
-      stop(paste("Must supply the number of observations when using covariance matrix as input."))
-    }
-    means  <- setNames(means, colnames(cov))
-  }
-  
-  if (covariance == FALSE){
-    means  <- colMeans(data) 
-    N      <- nrow(data)
-    data.c <- apply(data, 2, function(y) y - mean(y)) 
-  }
-  
-  means <- matrix(means, nrow = 1, ncol = length(means), dimnames = list("", names(means)) )
-  
-  if ( length(mod$constr) == 0 ) { restrictions <- FALSE }
-  if ( length(mod$constr)  > 0 ) { restrictions <- TRUE  }
-  
-  if ( !is.null(overid) && !is.null(instruments)){
-    stop(paste("Cannot supply both instruments list and overid."))
-  }
-  
-  if (!is.null(instruments)) {
-    table   <- lavParTable(instruments)
-    table   <- table[table$op == "~",]
-    dv_list <- unique(table$lhs)
-    iv_list <- list(DV_user = "", IV_user = "")
-    iv_list <- replicate(length(dv_list), iv_list, simplify = FALSE)
+  #-------------------------------------------------------# 
+  # A few basic sanity checks for user-supplied covariance 
+  # matrices and mean vectors. Also, rescale cov.matrix if
+  # cov.rescale set to TRUE.
+  #-------------------------------------------------------# 
+  if(is.null(data)){
     
-    
-    for (i in 1:length(dv_list)) {
-      
-      iv_list[[i]]$DV_user <- dv_list[i]
-      iv_list[[i]]$IV_user <- c(table[table$lhs == dv_list[i], ]$rhs)
+    if (!is.null(ordered)){
+      stop(paste(
+        "miive: raw data required when declaring factor variables.")
+      )
     }
     
-    dv_user <- unlist(lapply(iv_list, "[", c("DV_user")), use.names=FALSE)
-    iv_user <- unlist(lapply(iv_list, "[", c("IV_user")), use.names=FALSE)
-    
-    eqns_not_to_estimate <- c()
-    
-    dv_user <-
-      unlist(lapply(iv_list, "[", c("DV_user")), use.names = FALSE)
-    iv_user <-
-      unlist(lapply(iv_list, "[", c("IV_user")), use.names = FALSE)
-    
-    eqns_not_to_estimate <- c()
-    
-    for (i in 1:length(d)) {
+    if(!is.null(sample.mean)){
       
-      dv <- d[[i]]$DVobs
-      index <- which(dv_user == dv)
-      
-      # if the equation isn't listed remove it
-      if (is.integer(index) && length(index) == 0L) {
-        eqns_not_to_estimate <- c(eqns_not_to_estimate, i)
+      if (!is.null(sample.mean) & !is.vector(sample.mean)){
+        stop(paste(
+          "miive: sample.mean must be a vector.")
+        )
       }
       
-      if (is.integer(index) && length(index) != 0L) {
-        
-        iv_user  <- iv_list[[index]]$IV_user
-        iv_miivs <- d[[i]]$IV
-        n_pred   <- length(d[[i]]$IVobs)
-        
-        if (length(iv_user) < n_pred) {
-          stop(paste("Need at least ", n_pred, " instruments for ", dv))
-        }
-        
-        check <- iv_user[which(!(iv_user %in% iv_miivs))]
-        
-        if (!(is.character(check) && length(check) == 0L)) {
-          stop(paste("Instruments for ", dv, " are not valid."))
-        }
-        
-        d[[i]]$IV <- iv_user
+      if (!all.equal( names(sample.mean), colnames(sample.cov), 
+                    check.attributes = FALSE )){
+        stop(paste(
+          "miive: names of sample.mean vector",
+          "and sample.cov matrix must match.")
+        )
       }
+      
     }
-    if (length(eqns_not_to_estimate) > 0) {
-      d <- d[-eqns_not_to_estimate]
+    
+    if(sample.cov.rescale & !is.null(sample.cov)){
+      sample.cov <- sample.cov * (sample.nobs-1)/sample.nobs
     }
+    
+  }
+  
+  #-------------------------------------------------------#  
+  # Check class of model.
+  #-------------------------------------------------------#
+  if ( "miivs" == class(model) ){ 
+    
+    d  <- model$eqns 
+    pt <- model$pt
+    
+  } else { 
+    
+    res <- miivs(model)
+    d   <- res$eqns
+    pt  <- res$pt
+    
   } 
   
+  #-------------------------------------------------------# 
+  # parseInstrumentSyntax
+  #-------------------------------------------------------#
+  d  <- parseInstrumentSyntax(d, instruments, miiv.check)
   
-  if (!is.null(overid)){ d <- optimMIIV(d, overid, data)}
+  #-------------------------------------------------------# 
+  # remove equations where there are not sufficient MIIVs
+  #-------------------------------------------------------#
+  underid   <- unlist(lapply(d, function(eq) {
+    length(eq$MIIVs) < length(eq$IVobs)
+  }))
+  d.un <- d[underid]; d   <- d[!underid]
   
-  
-  
-  if (restrictions == TRUE){
+  #-------------------------------------------------------# 
+  # Remove variables from data that are not in model 
+  # syntax and preserve the original column ordering.
+  #-------------------------------------------------------# 
+  if(!is.null(data)){
     
-    for(i in 1:length(d)){
-      if (covariance == TRUE){
-        gl0 <-  paste(d[[i]]$DVobs, "_",d[[i]]$IVobs, sep="")
-      }
-      if (covariance == FALSE){
-        gl0 <- c(paste(d[[i]]$DVobs, "_Int", sep=""), 
-                 paste(d[[i]]$DVobs, "_",d[[i]]$IVobs, sep=""))
-      }
-      if(i==1)(gl <- gl0)
-      if(i >1)(gl <- c(gl, gl0))
+    obs.vars <- unique(unlist(lapply(d,"[", c("DVobs", "IVobs", "MIIVs"))))
+    
+    if (any(!obs.vars %in% colnames(data))){
+     stop(paste(
+       "miive: model syntax contains variables not in data.")
+     )
     }
     
-    con <- mod$constr
-    R <- matrix(0, nrow = length(con), ncol = length(gl))
-    L <- matrix(0, nrow = length(con), ncol = 1)
-    dimnames(R) <- list(unlist(lapply(con, "[[", c("NAME"))), gl)
-    dimnames(L) <- list(unlist(lapply(con, "[[", c("NAME"))), c(" "))
+    data <- data[,colnames(data) %in% obs.vars]
+    data <- as.data.frame(data)
     
-    for (r in 1:length(con)){
-      if (con[[r]]$FIX == 0 ){ 
-        R[r, paste(con[[r]]$SET[1],"_",con[[r]]$DV[1], sep="")] <-  1
-        R[r, paste(con[[r]]$SET[2],"_",con[[r]]$DV[2], sep="")] <- -1
-        L[r] <- 0
-      }
-      
-      if (con[[r]]$FIX != 0 ){
-        R[r, paste(con[[r]]$SET,"_",con[[r]]$DV, sep="")] <- 1
-        L[r] <- con[[r]]$FIX
-      }
-    }
-  } 
-  
-  if (restrictions == FALSE){
-    R <- NULL
-    L <- NULL
-  }
-  
-  #
-  # Start of MIIV estimation
-  #
-  
-  if (covariance == FALSE){ 
-    for (i in 1:length(d)){
-      if (i == 1){
-        y1     <- cbind(data[,d[[i]]$DVobs])
-        X1     <- as.matrix(cbind(1,data[,d[[i]]$IV]))
-        Y1     <- as.matrix(cbind(1,data[,d[[i]]$IVobs]))
-      }
-      if (i >= 2){
-        y1    <- rbind(y1, cbind(data[,d[[i]]$DVobs]))
-        X1    <- as.matrix(bdiag(X1, as.matrix(cbind(1,data[,d[[i]]$IV]))))
-        Y1    <- as.matrix(bdiag(Y1, as.matrix(cbind(1,data[,d[[i]]$IVobs]))))
-      }
-      d[[i]]$IVobsInt <- c(paste(d[[i]]$DVobs,"_Int", sep= ""), d[[i]]$IVobs)
-    }
-    
-    y1 <- as(Matrix(y1), "dgeMatrix")
-    X1 <- as(Matrix(X1), "sparseMatrix")
-    Y1 <- as(Matrix(Y1), "sparseMatrix")
-    
-    X1inv    <- solve(crossprod(X1)) 
-    Y1hat    <- X1%*% (X1inv %*% (t(X1) %*% Y1))
-    
-    if (restrictions == TRUE){
-      b <- solve(rbind(cbind(as.matrix(crossprod(Y1hat)), t(R)), cbind(R, matrix(0, 
-           ncol=nrow(R), nrow=nrow(R))))) %*% rbind(as.matrix(t(Y1hat) %*% y1), L)
-      b <- cbind(b[1:ncol(R)])
-      b.unr <- solve(crossprod(Y1hat)) %*% t(Y1hat)%*%y1
-      b.unr <- cbind(b.unr[1:ncol(R)])
-    }
-    if (restrictions == FALSE){
-      b <- solve(crossprod(Y1hat)) %*% t(Y1hat)%*%y1
-    }
-  } 
-  
-  if (covariance == TRUE){ 
-    for (i in 1:length(d)){
-      if (i == 1){
-        sYX <- as.matrix(cov[d[[i]]$IVobs, d[[i]]$IV,  drop = FALSE])
-        sXY <- as.matrix(cov[d[[i]]$IV, d[[i]]$IVobs, drop = FALSE])
-        sXX <- as.matrix(cov[d[[i]]$IV, d[[i]]$IV,  drop = FALSE])
-        sYY <- as.matrix(cov[d[[i]]$IVobs, d[[i]]$IVobs,  drop = FALSE])
-        sXy <- as.matrix(cov[d[[i]]$IV, d[[i]]$DVobs, drop = FALSE])
-        syY <- as.matrix(cov[d[[i]]$DVobs, d[[i]]$IVobs, drop = FALSE])
-        sy1 <- as.matrix(cov[d[[i]]$DVobs, d[[i]]$DVobs, drop = FALSE])
-        sy1X <- as.matrix(cov[d[[i]]$DVobs, d[[i]]$IV, drop = FALSE])
-        sXy1 <- as.matrix(cov[d[[i]]$IV, d[[i]]$DVobs, drop = FALSE])
-      }
-      if (i >= 2){
-        sYX <- as.matrix(bdiag(sYX ,as.matrix(cov[d[[i]]$IVobs, d[[i]]$IV,  drop = FALSE])))
-        sXY <- as.matrix(bdiag(sXY ,as.matrix(cov[d[[i]]$IV, d[[i]]$IVobs, drop = FALSE])))
-        sXX <- as.matrix(bdiag(sXX ,as.matrix(cov[d[[i]]$IV, d[[i]]$IV,  drop = FALSE])))
-        sYY <- as.matrix(bdiag(sYY ,as.matrix(cov[d[[i]]$IVobs, d[[i]]$IVobs,  drop = FALSE])))
-        sXy <- as.matrix(rbind(sXy ,as.matrix(cov[d[[i]]$IV, d[[i]]$DVobs, drop = FALSE])))
-        syY <- as.matrix(bdiag(syY ,as.matrix(cov[d[[i]]$DVobs, d[[i]]$IVobs, drop = FALSE])))
-        sy1 <- as.matrix(rbind(sy1, as.matrix(cov[d[[i]]$DVobs, d[[i]]$DVobs, drop = FALSE])))
-        sy1X <- as.matrix(bdiag(sy1X ,as.matrix(cov[d[[i]]$DVobs, d[[i]]$IV, drop = FALSE])))
-        sXy1 <- as.matrix(bdiag(sXy1 ,as.matrix(cov[d[[i]]$IV, d[[i]]$DVobs, drop = FALSE])))
-      }
-      
-    }
-    
-    if (restrictions == TRUE){
-      left  <- solve(rbind(cbind(sYX %*% solve(sXX) %*% sXY, t(R)), 
-                           cbind(R, matrix(0, ncol=nrow(R), nrow=nrow(R)))))
-      right <-  rbind(sYX %*% solve(sXX) %*% sXy, L)
-      b <- left %*% right
-      b.unr <- solve(sYX %*% solve(sXX) %*% sXY) %*% sYX %*% solve(sXX) %*% sXy
-    }
-    
-    if (restrictions != TRUE){
-      b <- solve(sYX %*% solve(sXX) %*% sXY) %*% sYX %*% solve(sXX) %*% sXy
-    }
-  }
-  
-  dvs <- unlist(lapply(d, function(x) unlist(x$DVobs))) 
-  ivs <- unlist(lapply(d, function(x) unlist(x$IVobs)))
-  if (covariance == FALSE){
-    de <- do.call("rbind",lapply(d, function(x) cbind(x$DVobs, c(paste("Int_",x$DVobs,sep="") ,x$IVobs))))
-  }
-  if (covariance == TRUE){
-    de <- do.call("rbind",lapply(d, function(x) cbind(x$DVobs ,x$IVobs)))
-  }
-  b <- data.frame(cbind(b[1:nrow(de),], de))
-  colnames(b) <- c("b","dv", "iv")
-  b$eq <- with(b, ave(as.character(dv), FUN = function(x) cumsum(!duplicated(x))))
-  b$b <- as.numeric(as.character(b$b))
-  b$id <- 1:nrow(b)
-  if (restrictions == TRUE){ 
-    b.ur <- b 
-    b.ur$b <- b.unr
-  }
-  dups <- which(as.numeric(ave(paste(b$dv), b$dv, FUN = seq_along))!=1)
-  ints <- which(as.numeric(ave(paste(b$dv), b$dv, FUN = seq_along))==1)
-  nod <- setdiff(ivs, dvs)
-  nod <- nod[!grepl("_Int", nod)]
-  all <- c(dvs, nod)
-  mx  <- as.matrix(b[,c("iv","dv","b")])
-  
-  B <- outer(all, all, 
-             function(x, y) {
-               mapply(function(x.sub, y.sub) {
-                 val <- mx[mx[, 1] == x.sub & mx[, 2] == y.sub, 3]
-                 if(length(val) == 0L) 0 else as.numeric(as.character(val))*-1
-               }, x, y)
-             } 
-  )
-  B <- as(B,"Matrix") + Diagonal(nrow(B)); dimnames(B) <- list(all,all)
-  
-  if (restrictions == TRUE){ 
-    mx.ur <- as.matrix(b.ur[,c("iv","dv","b")])
-    B.ur <- outer(all, all, 
-                  function(x, y) {
-                    mapply(function(x.sub, y.sub) {
-                      val <- mx.ur[mx.ur[, 1] == x.sub & mx.ur[, 2] == y.sub, 3]
-                      if(length(val) == 0L) 0 else as.numeric(as.character(val))*-1
-                    }, x, y)
-                  } 
+    # convert any variables listed in 
+    # ordered to categorical
+    data[,ordered]  <- lapply(
+      data[,ordered, drop = FALSE], ordered
     )
-    B.ur <- as(B.ur,"Matrix") + Diagonal(nrow(B)) 
   }
   
-  #
-  # Calculate tests 
-  #
-  
-  if(tests){
+  #-------------------------------------------------------# 
+  # If missing == "listwise"
+  #-------------------------------------------------------# 
+  if (!is.null(data) & missing == "listwise"){
     
-    if (covariance == FALSE){
-      Y         <- as(as.matrix(data)[,all, drop=FALSE], "Matrix")
-      Y.c       <- as(apply(Y, 2, function(y) y - mean(y)), "Matrix")
-      E         <- Y.c %*% B; colnames(E) <- all
-      S.EE      <- (t(B) %*% crossprod(Y.c) %*% B) / N
-      V         <- E %*% solve(B); colnames(V) <- all
-      V.r       <- V[,unlist(dvs), drop = FALSE]
-      S.MI      <- crossprod(V.r) / N
-      S.OB      <- as(cov(data[, unlist(dvs), drop = FALSE]), "Matrix")
-      S.RS      <- S.OB - S.MI
-      u.hat     <- bdiag(split(t(E[,dvs]),1:ncol(E[,dvs, drop = FALSE])))# for sarg.
-      ##P.z       <- X1 %*% X1inv %*% t(X1)
-      ##srg       <- diag(crossprod(u.hat,P.z) %*% u.hat / (crossprod(u.hat)/ N))
-      srg       <- diag(t(u.hat) %*% (X1 %*% (X1inv %*% (t(X1) %*% u.hat))) / (crossprod(u.hat)/ N) )
-      srg.df    <- unlist(lapply(d, function(x) length(x$IV) - length(x$IVobs)))
-      srg       <- data.frame(srg.df, srg)
-      srg$srg.p <- apply(srg, 1, function(x)  1 - pchisq(x[2] ,df = x[1]))
-      srg$dv    <- dvs
-      b         <- merge(b, srg, all.x=TRUE)
-      b         <- b[order(b$id), ]
-      b[dups, c("srg","srg.df","srg.p")] <- NA
-      
-      if (restrictions == TRUE){
-        S.EEur <- (t(B.ur) %*% t(Y.c) %*% Y.c %*% B.ur) / N
-        I <- Diagonal(N)
-        omega <- solve(kronecker(diag(diag(S.EE[unlist(dvs),unlist(dvs)])), I) )
-        top <- cbind(as.matrix(t(Y1hat) %*% omega %*% Y1hat), t(R))
-        bot <- cbind(R, matrix(0, ncol=nrow(R), nrow=nrow(R)))
-        S.EEr <- as.matrix(solve(rbind(top, bot)) )
-        S.EEr <- (S.EEr[1:length(gl),1:length(gl)])
-        rownames(S.EEr) <- gl
-        b$se <- cbind(sqrt(diag(S.EEr)))
-        # for test of restrictions only
-        dimnames(S.EEur) <- dimnames(S.EE) ## added this temporarily
-        omega.ur <- solve(kronecker(diag(diag(S.EEur[unlist(dvs),unlist(dvs)])), I))
-        S.EEur.r <- as.matrix(solve(t(Y1hat) %*% omega.ur %*% Y1hat))
-      }
-      
-      if (restrictions == FALSE){
-        I     <- Diagonal(N)
-        omega <- solve(kronecker(diag(diag(S.EE[unlist(dvs),unlist(dvs), drop = FALSE]),
-                                      nrow = length(dvs), ncol = length(dvs)), I))
-        S.EEr <- as.matrix(solve(t(Y1hat) %*% omega %*% Y1hat))
-        rownames(S.EEr) <- b$iv
-        b$se <- cbind(sqrt(diag(S.EEr)))
-      }
-      
-    }
+    data <- data[stats::complete.cases(data),]
     
-    if (covariance == TRUE){
-      S.EE <- t(B) %*% cov[colnames(B), colnames(B)] %*% B
-      S.OB <- cov[colnames(B), colnames(B)]
-      S.MI <-  t(solve(B)) %*% S.EE %*% solve(B)
-      S.RS <- S.OB - S.MI
-      se <- cbind(diag(S.EE[dvs,dvs]/N)) ##
-      colnames(se) <- "se"
-      rownames(se) <- dvs
-      b <- merge(b, se, by.x = "dv", by.y = "row.names")
-      b <- b[order(b$id), ]
-      if (restrictions == TRUE){
-        R0 <- matrix(0, ncol=nrow(R), nrow=nrow(R))
-        omega <- diag((solve(rbind(cbind(sYX %*% solve(sXX) %*% sXY, t(R)), 
-                                   cbind(R, R0))))[1:length(gl),1:length(gl)])
-      }
-      if (restrictions == FALSE){
-        omega <- diag((solve(sYX %*% solve(sXX) %*% sXY))) 
-      }
-      b$se <- sqrt(b$se*omega)
-      ybar <- t(means); colnames(ybar) <- "ybar"; 
-      xbar <- ybar; colnames(xbar) <- "xbar";
-      int <- merge(b, xbar, by.x = "iv", by.y = "row.names") 
-      int <- int[order(int$id), ];
-      int$yb <- int$xbar*int$b
-      int <- aggregate(yb~dv+eq,int,sum)
-      int <- merge(int, ybar, by.x = "dv", by.y = "row.names") 
-      int$b <- int$ybar - int$yb; int$iv <- "Int";
-      int$ybar <- int$yb <- NULL; int$se <- NA; int$id <- NA;
-      int[order(as.numeric(as.character(int$eq))), ]
-      b$id <- 2; int$id <- 1; 
-      b <- rbind(b,int)
-      b <- b[with(b, order(as.numeric(as.character(eq)), id)), ]
-      b$id <- 1:nrow(b)
-      b$srg <- NA
-      b$srg.df <- NA
-      b$srg.p <- NA
-    }
-    
-    restests   <- NULL
-    if (restrictions == TRUE & covariance == FALSE){ 
-      restlabels <- unlist(lapply(con, "[[", c("NAME")))
-      
-      #lrtest.est <- N * (log(det(S.EE[dvs,dvs,drop=FALSE])) - log(det(S.EEur[dvs,dvs,drop=FALSE])))
-      #lrtest.df <- nrow(R)
-      #lrtest.p <- pchisq(lrtest.est, lrtest.df, lower.tail = FALSE)
-      #lrtest.lab <- "Likelihood Ratio Test: Asymptotic Chi-squared"
-      #lrtest <- list(lrtest.est, lrtest.p, lrtest.df, lrtest.lab)
-      lrtest <- NULL
-      
-      waldtest.est <- t(R %*% b.ur$b - L) %*% solve(R %*% S.EEur.r %*% t(R)) %*% (R %*% b.ur$b - L)
-      waldtest.df <- nrow(R)
-      waldtest.p <- pchisq(waldtest.est, waldtest.df, lower.tail = FALSE)
-      waldtest.lab <- "Wald Test: Asymptotic Chi-squared"
-      waldtest <- list(waldtest.est, waldtest.p, waldtest.df, waldtest.lab)
-      
-      
-      restests <- list(lrtest,waldtest, restlabels)
-    }
-    
-    # get p values for coefficients
-    b$z <- apply(b[,c("b","se")], 1, function(x) x[1]/x[2])
-    b$p <- apply(b[,c("b","se")], 1, function(x) 2*(pnorm(abs(x[1]/x[2]), lower.tail=FALSE)))
-    b$iv <- as.character(b$iv)
-    b$dv <- as.character(b$dv)
-    if (covariance == FALSE) {b[ints, "iv"] <- "Int"} 
-    
-    if (restrictions == TRUE){
-      for (i in 1:length(con)){
-        if (con[[i]]$FIX !=0) {
-          b[b$dv == con[[i]]$SET & b$iv == con[[i]]$DV, c("se","z","p")]<-NA
-        }
-      }
-    }
-    
-    for (i in 1:length(d)){
-      d[[i]]$EST <- b[b$dv == d[[i]]$DVobs, "b"]
-    }
-    
-    for (i in 1:length(d)){ # i =1
-      
-      if (d[[i]]$NOTE != "") {
-        olddf <- b[b$eq == i & !is.na(b$srg.df),]$srg.df  
-        newdf <- paste(olddf,"*",sep="")
-        b[b$eq == i & !is.na(b$srg.df),]$srg.df <- newdf
-      }
-      
-      if (covariance == FALSE){
-        if (b[b$eq == i & !is.na(b$srg.df),]$srg.df == 0) {
-          b[b$eq == i & !is.na(b$srg.df),]$srg    <- NA
-          b[b$eq == i & !is.na(b$srg.df),]$srg.p  <- NA
-          b[b$eq == i & !is.na(b$srg.df),]$srg.df <- NA
-        }
-      }
-      
-      if (!any(is.na(d[[i]]$IVlat))) {
-        dvobs <- d[[i]]$DVobs
-        for(z in 1:length(d[[i]]$IVlat)){
-          ivobs <- d[[i]]$IVobs[z]
-          ivlat <- d[[i]]$IVlat[z]
-          b[b$dv == dvobs & b$iv == ivobs,]$iv <- ivlat
-        }
-      }
-      
-      if (!is.na(d[[i]]$DVlat)) {
-        b[b$dv == d[[i]]$DVobs, "dv"] <- d[[i]]$DVlat
-      }
-    }
-    
-    
-    dat <- b[,c("dv", "iv", "b", "se", "z", "p","srg", "srg.df", "srg.p")]
-    colnames(dat) <- c("DV", "EV", "Estimate", "StdErr", 
-                       "Z", "P(|Z|)","Sargan", "df", "P(Chi)")
-  }
-  
-  # No tests or SEs, just report the point estimates
-  
-  else{
-    dat <- b[,c("dv", "iv", "b")]
-    colnames(dat) <- c("DV", "EV", "Estimate")
-    restests <- NULL
-  }
-  modeqns <- mod$df
-  
-  # 
-  # Optionally calculate variance covariance matrix and boostrap.
-  #
-  
-  if (!is.null(varcov)){
-    vcovlist <- miivvarcov(model,varcov,dat, data, covariance, cov, N)
-    vcov <- vcovlist[[1]]
-    lavsyntax <- vcovlist[[2]]
-  }
-  else{
-    lavsyntax <- NULL
-    vcov <- NULL
-  }
-  
-  if (!is.null(bootstrap.se)){
-    dat <- miivboot(d = d, dat = dat, restrictions = restrictions, data = data, 
-                    bootstrap.se = bootstrap.se, reps=1000, R = R, L = L, B = B)
-  }
-  
-  ctrlopts <- list(print.miivs = print.miivs, 
-                   restrictions = restrictions, 
-                   varcov = varcov, 
-                   bootstrap.se =  bootstrap.se,
-                   covariance = covariance,
-                   tests = tests)
-  
-  for (i in 1:length(d)){
-    LHS <- paste(d[[i]]$DVobs, collapse = ", ")
-    RHS <- paste(d[[i]]$IVobs, collapse = ", ")
-    Instruments <- paste(d[[i]]$IV, collapse = ", ")
-    Disturbance <- paste("e.",d[[i]]$CD, collapse = ", ", sep="")
-    modtemp <- as.data.frame(cbind(LHS, RHS, Disturbance, Instruments))
-    colnames(modtemp) <- c("LHS", "RHS", "Composite Disturbance", "MIIVs")
-    if (i == 1) {modeqns <- modtemp }
-    if (i >  1) {modeqns <- rbind(modeqns,modtemp) }
   } 
+
+  #-------------------------------------------------------# 
+  # Process data. See documentation of processRawData. 
+  #-------------------------------------------------------# 
+  g <- processData(data, 
+                   sample.cov, 
+                   sample.mean, 
+                   sample.nobs, 
+                   ordered, 
+                   missing,
+                   se,
+                   pt )
   
-  res <- list(model = d, dat = dat, modeqns = modeqns, 
-              ctrlopts = ctrlopts, 
-              restests = restests, vcov = vcov, 
-              lavsyntax = lavsyntax,
-              overid = overid)
+  #-------------------------------------------------------# 
+  # Add some fields to d and check for any problematic
+  # cases prior to estimation.  
+  #-------------------------------------------------------# 
+  d <- lapply(d, function (eq) {
+    
+    eq$missing <- ifelse(
+      any(g$var.nobs[c(eq$DVobs, eq$IVobs, eq$MIIVs)] < g$sample.nobs), 
+      TRUE, 
+      FALSE
+    )
+    
+    eq$categorical <- ifelse(
+      any(g$var.categorical[c(eq$DVobs, eq$IVobs, eq$MIIVs)]), 
+      TRUE, 
+      FALSE
+    )
+    
+    eq$exogenous   <- ifelse(
+      any(g$var.exogenous[c(eq$DVobs, eq$IVobs, eq$MIIVs)]), 
+      TRUE, 
+      FALSE
+    )
+    
+    # For now throw an error if a categorical equation
+    # contains an exogenous variable. 
+    if (eq$categorical & eq$exogenous){
+      
+      stop(paste("miive: exogenous variables in",
+                 "equations containing categorical",
+                 "variables (including MIIVs)",
+                 "are not currently supported."))
+    }
+    # if (eq$missing & eq$restricted){
+    #   stop(paste("miive: Restrictions on coefficients in",
+    #              "equations with missing values",
+    #              "(including on the MIIVs)",
+    #              "is not currently supported."))
+    # }
+    eq
+  })
   
-  class(res) <- "miive"
-  res
+  #-------------------------------------------------------#  
+  # Build Restriction Matrices.
+  #-------------------------------------------------------#  
+  r <- buildRestrictMat(d)
+  
+  d <- lapply(d, function (eq) {
+
+    eq$restricted  <- ifelse(
+      r$eq.restricted[eq$DVobs],
+      TRUE,
+      FALSE
+    )
+    # throw an error if a categorical equation 
+    # includes restrictions
+    if ((eq$categorical & eq$restricted) & se == "standard"){
+      stop(paste("miive: When SE = 'standard', restrictions",
+                 "on coefficients in equations containing",
+                 "categorical variables (including MIIVs)",
+                 "are not allowed. Remove restrictions or",
+                 "use se = 'bootstrap'."))
+    }
+    eq
+  })
+  
+  #-------------------------------------------------------#
+  # Generate results object.
+  #-------------------------------------------------------#
+  results <- switch(
+    estimator,
+      "2SLS" = miive.2sls(d, g, r, est.only, se, missing, var.cov, sarg.adjust),
+      # "GMM"  = miive.gmm(d, d.un, g, r, est.only, se), # Not implemented
+      # In other cases, raise an error
+      stop(
+        paste(
+          "Invalid estimator:", 
+          estimator, 
+          "Valid estimators are: 2SLS"
+        )
+      )
+  )
+  
+  #-------------------------------------------------------#
+  # Point estimates for variance and covariance params
+  #-------------------------------------------------------#
+  if (var.cov){
+    
+    if(length(d.un) > 0){
+      stop(paste("MIIVsem: variance covariance esimtation not",
+                 "allowed in the presence of underidentified",
+                 "equations."))
+    }
+    
+  
+    v <- estVarCovarCoef(data = data, 
+                         g = g, 
+                         eqns = results$eqn, 
+                         pt = pt, 
+                         ordered = ordered)
+    
+  } else {
+    
+    v <- NULL
+    
+  }
+  
+  
+  #-------------------------------------------------------#
+  # Boostrap and substitute closed form SEs with boot SEs
+  #-------------------------------------------------------# 
+  results$boot <- NULL
+  
+  if(se == "boot" | se == "bootstrap"){
+    
+    if(is.null(data)){
+      stop(paste("miive: raw data required for bootstrap SEs."))
+    }
+    
+    # Do this outside of the bootstrap loop
+
+    boot.results <- boot::boot(data, function(origData, indices){
+      
+      bsample <- origData[indices,]
+      
+      g.b <- processData(
+        data = bsample, 
+        sample.cov = NULL, 
+        sample.mean = NULL, 
+        sample.nobs = NULL, 
+        ordered = ordered, 
+        missing = missing,
+        se = se,
+        pt = pt
+      )
+      
+      
+      brep <- switch(
+        estimator,
+        "2SLS" = miive.2sls(d, g.b, r, est.only = TRUE, se, missing, var.cov),
+        #"GMM"  = miive.gmm(d, g, r, est.only = TRUE), 
+        # Not implemented
+        # In other cases, raise an error
+        stop(paste(
+          "Invalid estimator:", 
+          estimator, 
+          "Valid estimators are: 2SLS")
+        )
+      )
+      
+      if (var.cov){
+        
+        v.b <- estVarCovarCoef(bsample, g.b, brep$eqn, pt, ordered)
+        
+        c(brep$coefficients, v.b$coefficients)
+        
+      } else {
+        
+        brep$coefficients
+        
+      }
+      
+    }, bootstrap)
+    
+    # Replace the estimated variances of estimates 
+    # with the boostrap estimates
+    boot.mat <- boot.results$t[
+      stats::complete.cases(boot.results$t),
+    ]
+    
+    results$bootstrap.true <- nrow(boot.mat)
+    
+    # Need to determine which columns are constants
+    if (results$bootstrap.true > 0){
+      
+      nearZero <- apply(boot.mat , 2, stats::var, na.rm=TRUE) < 1e-16
+      
+    } else {
+      
+      nearZero <- FALSE
+      
+    }
+    
+    coefCov <- stats::cov(boot.mat)
+    
+    if(any(nearZero)) {
+      coefCov[nearZero,nearZero] <- round(
+        coefCov[nearZero,nearZero], 1e-10
+      )
+    }
+    
+    rownames(coefCov) <- colnames(coefCov) <- c(
+      names(results$coefficients), 
+      if (var.cov) { paste0(names(v$coefficients))} else { NULL }
+    )
+    
+    results$eqn <- lapply(results$eqn, function(eq) {
+      eq$coefCov <- coefCov[
+          names(eq$coefficients),
+          names(eq$coefficients),
+          drop = FALSE
+      ]
+      eq
+    })
+    
+    results$coefCov <- coefCov[
+      names(results$coefficients),
+      names(results$coefficients),
+      drop = FALSE
+    ]
+    
+    if (var.cov){
+      v$coefCov <- coefCov[
+        names(v$coefficients),
+        names(v$coefficients),
+        drop = FALSE
+      ]
+      
+    }
+    # Store the boot object as a part of the result object. 
+    # This is useful for calculating CIs or
+    # other bootstrap postestimation.
+    results$boot <- boot.results
+
+  } # end bootstrap
+  
+  
+  # Disable twostep procedure in the current release
+  
+  if (missing == "twostage" & se == "standard" & var.cov == TRUE){
+    
+    # twoStageCoefCov <- estTwoStageML(g,v,results$eqn,pt)
+    
+    # v$coefCov <- twoStageCoefCov[
+    #   names(v$coefficients), 
+    #   names(v$coefficients), 
+    #   drop = FALSE
+    # ]
+  }
+  
+  # assemble return object
+  results$model          <- model
+  results$estimator      <- estimator
+  results$se             <- se
+  results$var.cov        <- var.cov
+  results$missing        <- missing
+  results$boot.ci        <- boot.ci
+  results$bootstrap      <- bootstrap
+  results$call           <- match.call()
+  results$ordered        <- ordered
+  results$pt             <- unclass(pt)
+  results$eqn.unid       <- d.un
+  results$r              <- r
+  results$v              <- v
+
+  class(results)  <- "miive"
+  
+  results
 }
+

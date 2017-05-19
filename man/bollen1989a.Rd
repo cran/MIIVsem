@@ -9,9 +9,9 @@
 bollen1989a
 }
 \description{
-A dataset from Bollen (1989) containing measures of political democracy and
-industrialization for 75 developing countries in 1960 
-and 1965. The variables are as follows:
+A dataset from Bollen (1989) containing measures of political 
+democracy and industrialization for 75 developing countries 
+in 1960 and 1965. The variables are as follows:
 }
 \details{
 \itemize{
@@ -28,8 +28,28 @@ and 1965. The variables are as follows:
   \item x3. arcsin of square root of percentage of labor force in industry, 1960
 }
 }
+\examples{
+
+\dontrun{
+  model <- '
+    Eta1 =~ y1 + y2  + y3  + y4  
+    Eta2 =~ y5 + y6  + y7  + y8    
+    Xi1  =~ x1 + x2 + x3 
+    Eta1 ~ Xi1  
+    Eta2 ~ Xi1 
+    Eta2 ~ Eta1 
+    y1   ~~ y5
+    y2   ~~ y4
+    y2   ~~ y6
+    y3   ~~ y7
+    y4   ~~ y8
+    y6   ~~ y8 devtools::build_win()
+  '
+}
+
+}
 \references{
-Bollen, K. A. (1989). Structural equation models. New York: Wiley-Interscience.
+Bollen, K. A. (1989). Structural equation models. 
+  New York: Wiley-Interscience.
 }
 \keyword{datasets}
-
