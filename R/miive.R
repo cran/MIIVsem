@@ -62,6 +62,12 @@
 #' @param sarg.adjust Adjusment methods used to adjust the p-values associated
 #'        with the Sargan test due to multiple comparisons. Defaults is 
 #'        \code{none}. For options see \code{\link[stats]{p.adjust}}.
+#' @param overid.degree A numeric value indicating the degree of 
+#'        overidentification to be used in estimation. 
+#' @param overid.method The method by which excess MIIVs should
+#'        be pruned to satisfy the \code{overid.degree}. Options include
+#'        random (\code{minimum.eigen}) or stepwise R2.
+#'        (\code{stepwise.R2}).The default is \code{stepwise.R2}.
 #' @details 
 #' 
 #' \itemize{
@@ -371,9 +377,6 @@
 #' Incomplete Nonnormal Data. \emph{Structural Equation Modeling: 
 #' A Multidisciplinary Journal}, 21(2), 280–302. 
 #'
-#' @example example/bollen1989-miive1.R
-#' @example example/bollen1989-miive2.R
-#' @example example/bollen1989-miive3.R
 #' 
 #' @seealso \link{MIIVsem}{miivs}
 #' 
@@ -396,7 +399,10 @@ miive <- function(model = model,
                   var.cov = FALSE, 
                   miiv.check = TRUE, 
                   ordered = NULL,
-                  sarg.adjust = "none"){
+                  sarg.adjust = "none",
+                  overid.degree = NULL,
+                  overid.method = "stepwise.R2"
+                  ){
   
   #-------------------------------------------------------#
   # In the current release disable "twostage" missing
@@ -512,6 +518,21 @@ miive <- function(model = model,
                    missing,
                    se,
                    pt )
+  
+  #-------------------------------------------------------# 
+  # Instrument pruning takes place here. 
+  #-------------------------------------------------------# 
+  if (!is.null(overid.degree)){
+    d <- pruneExcessMIIVs(d, 
+                          overid.degree,  
+                          overid.method, 
+                          data = data, 
+                          sample.cov = g$sample.cov, 
+                          sample.polychoric = g$sample.polychoric,
+                          sample.mean = g$sample.mean, 
+                          sample.nobs = g$sample.nobs,
+                          cat.vars    = g$var.categorical)
+  }
   
   #-------------------------------------------------------# 
   # Add some fields to d and check for any problematic

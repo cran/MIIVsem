@@ -169,7 +169,6 @@
 #' Bentler, P. M., and Weeks, D. G. (1980). Linear Structural 
 #' Equations with Latent Variables. \emph{Psychometrika}, 45, 289–308.                 
 #' 	
-#' @example example/bollen1989-miivs.R
 #'
 #' @seealso \code{\link{miive}}
 #' 
