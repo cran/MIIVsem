@@ -4,7 +4,8 @@
 \alias{summary.miivs}
 \title{Summary information for a MIIV search object}
 \usage{
-\method{summary}{miivs}(object, miivs.out = FALSE, eq.info = FALSE, ...)
+\method{summary}{miivs}(object, miivs.out = FALSE, eq.info = FALSE,
+  ...)
 }
 \arguments{
 \item{object}{An object of class \code{miivs}}

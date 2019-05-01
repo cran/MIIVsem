@@ -34,14 +34,30 @@ factorScores <- function(model, data, lv_scores, lv_estimator){
     fs <- matrix(0, length(lv), nrow(data))
     
     for (k in 1:length(lv)){
+      
       Y  <- t(data[,pt[pt$op == "=~" & pt$lhs == lv[k], "rhs"]]) # selecting ROIs for that component
-      vv <- svd(stats::cov(t(Y)))     # SVD is used, which on covariance matrix should be similar to PCA
+      
+      ## =================================== ##
+      ## implemented to handle missing data
+      ## =================================== ##
+      if(sum(is.na(Y)) > 0){
+        varnames  <- pt[pt$op == "=~" & pt$lhs == lv[k], "rhs"]
+        covsatmod <- outer(varnames, varnames, function(x, y) paste(x, "~~", y))
+        satMod    <- c(covsatmod[lower.tri(covsatmod, diag = TRUE)])
+        cov0      <- unclass(lavaan::lavInspect(lavaan::cfa(satMod, t(Y), missing ="FIML"), what = "cov.ov"))
+      } else {
+        cov0      <- stats::cov(t(Y))
+      }
+      ## =================================== ##
+      
+      vv <- svd(cov0)                 # SVD is used, which on covariance matrix should be similar to PCA
       Lam <- vv$u[,1]                 # take the first component from decomposition
       fs[k,] <- t(Lam)%*%Y            # calculate scores across time
     }
     fs <- t(fs)
     colnames(fs) <- lv
     
+    pe <- NULL
     
   } else {
     

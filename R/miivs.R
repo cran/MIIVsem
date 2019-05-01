@@ -537,16 +537,26 @@ miivs <- function(model){
     
     eqns[[j]]$MIIVs <- names(which((e&i)[obsVars]))
     
+    # zf: edit on 2019-04-10 as higher order factors that receive paths
+    #     were being coded as measurement equations
     # Add equation type: we did this for higher order factors above. 
-    eqns[[j]]$EQmod <- if(is.na(eqns[[j]]$EQmod)){
-      if (eqns[[j]]$DVlat %in% pt$rhs[pt$op =="=~"] ){
+    eqns[[j]]$EQmod <-  if (eqns[[j]]$DVlat %in% pt$rhs[pt$op =="=~"] ){
         "measurement"
       } else {
         "regression"
-      }
-    } else {
-      eqns[[j]]$EQmod 
     }
+    # end fix.
+    
+    # old code.
+    # eqns[[j]]$EQmod <-  if(is.na(eqns[[j]]$EQmod)){
+    #   if (eqns[[j]]$DVlat %in% pt$rhs[pt$op =="=~"] ){
+    #     "measurement"
+    #   } else {
+    #     "regression"
+    #   }
+    # } else {
+    #   eqns[[j]]$EQmod 
+    # }
     
   }
   

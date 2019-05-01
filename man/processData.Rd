@@ -5,8 +5,8 @@
 \title{Process data.}
 \usage{
 processData(data = data, sample.cov = sample.cov,
-  sample.mean = sample.mean, sample.nobs = sample.nobs, ordered = ordered,
-  missing = missing, se = se, pt = pt)
+  sample.mean = sample.mean, sample.nobs = sample.nobs,
+  ordered = ordered, missing = missing, se = se, pt = pt)
 }
 \description{
 Process data.

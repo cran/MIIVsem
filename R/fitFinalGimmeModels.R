@@ -20,13 +20,15 @@ fitFinalGimmeModels <- function(ts_list_obs, meas_model, lv_model, miiv.dir, lv_
   
   
   df_all <- do.call("rbind",lapply(seq_along(ts_list_obs), function(i){
-  
-    pt  <- lavaan::lavParTable(c(meas_model[[i]], lv_model[[i]]))
+    
+    pt  <- lavaan::lavParTable(c(meas_model[[i]], lv_model[[i]]),fixed.x=FALSE)
     
     # remove any nonsense paths that have been fixed to zero
     pt <- pt[pt$free != 0,      ]
     pt <- pt[pt$op   != ".==.", ]
-    
+    pt <- pt[!(pt$op   == "~~" & pt$lhs == pt$rhs), ]
+    pt <- pt[pt$op != "~1",]
+    pt <- pt[!(grepl("lag", pt$lhs) & pt$op == "~~"),]
     
     mod <- unlist(lapply(seq_along(1:nrow(pt)), function(j){
       pt <- pt[j,]
@@ -37,7 +39,6 @@ fitFinalGimmeModels <- function(ts_list_obs, meas_model, lv_model, miiv.dir, lv_
       }
     }))
     
-
     
     if(lv_final_estimator == "miiv"){
       
@@ -61,13 +62,15 @@ fitFinalGimmeModels <- function(ts_list_obs, meas_model, lv_model, miiv.dir, lv_
         x
       })
       
-      
       df <- estimatesTable(miive(so, ts_list_obs[[i]], overid.degree = 1, overid.method = "stepwise.R2"), sarg = TRUE)
+      df <- df[df$op != "~1",]
+      
       
     } else if (lv_final_estimator == "pml"){
       
       df <- lavaan::parameterEstimates(lavaan::sem(mod, ts_list_obs[[i]]))
-      
+      df <- df[df$op != "~1",]
+            
     }
     
     subj <- names(ts_list_obs)[i]
@@ -77,7 +80,7 @@ fitFinalGimmeModels <- function(ts_list_obs, meas_model, lv_model, miiv.dir, lv_
   
 
   
-  dir.create(miiv.dir)
+  dir.create(miiv.dir,showWarnings = FALSE)
   
   utils::write.csv(df_all,file.path(miiv.dir, "indPathEstimates.csv") ,row.names = FALSE)
   
