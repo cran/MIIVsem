@@ -79,10 +79,11 @@ fitFinalGimmeModels <- function(ts_list_obs, meas_model, lv_model, miiv.dir, lv_
   }))
   
 
-  
-  dir.create(miiv.dir,showWarnings = FALSE)
-  
-  utils::write.csv(df_all,file.path(miiv.dir, "indPathEstimates.csv") ,row.names = FALSE)
+  if(!is.null(miiv.dir)){
+    dir.create(miiv.dir,showWarnings = FALSE)
+    
+    utils::write.csv(df_all,file.path(miiv.dir, "indPathEstimates.csv") ,row.names = FALSE)
+  }
   
   return(df_all)
   

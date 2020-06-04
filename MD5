@@ -1,6 +1,6 @@
-6ab96adced3573d559a3af9a5d323952 *DESCRIPTION
+eaf2bf4d59a330d389c64354ecdeb75b *DESCRIPTION
 7bc7e0b39e0042b5c544cd800cc3f4c2 *NAMESPACE
-ff26630cfb021f91cbf9cc89f456169a *R/MIIVsem-data.R
+ec49a09cc393f147c3bf7f010a6ff8d6 *R/MIIVsem-data.R
 b55fc372d55c11da8c0cc1727855ceef *R/MIIVsem.R
 7179bd6356dffaeaed7f41be591c8e23 *R/buildDeltaK.R
 9599ee03ccfdfe6ba2c9aa401961a01b *R/buildMissingSyntax.R
@@ -8,7 +8,7 @@ cb9bab61be44b1c7e66c6648bcfaa4a8 *R/buildRestrictMat.R
 f6540b26d339a254ab97bc092363cdf6 *R/buildSSCP.R
 a0b22c356ad4a87bce7cf0d90be6c04f *R/buildVarCovSyntax.R
 61f85ddc4b88a46bd6520bab26525f33 *R/chooseSI.R
-5fd9043fda16319f3a85234395fb09d0 *R/est2SLSCoef.R
+64ce4ca5dfca13f9d5fac3ac6fbe9160 *R/est2SLSCoef.R
 0494beb2fb928f35edffbd326a99d1e9 *R/est2SLSCoefCov.R
 cb54b39af4de1c019ff11a3580cbc4c7 *R/est2SLSSigmaSq.R
 2e89f81f2d4a4910441dcc9fc4b532c9 *R/estResidualCov.R
@@ -17,7 +17,7 @@ a8599f35b0602810ea6f79d3805f1aa6 *R/estVarCovarCoef.R
 7c5ae7e22774024d0d1f51b44202cecb *R/estimatesTable.R
 c2765234e38ea4b7039d073fa976ad7c *R/factorScores.R
 c16aacb052d3faec76ad3b1004bb425c *R/fillParTable.R
-171bfc8fbacb67b4fced73ae8ab49ae9 *R/fitFinalGimmeModels.R
+5d60ca031f60cacddaca5345f4560990 *R/fitFinalGimmeModels.R
 669b04353697224822acf2ae125ecc69 *R/getModelList.R
 8496f206594c8a2e70bf0cb54e70eda9 *R/miive.2sls.R
 af77ed0b5c8ad706bc558f2e91c1cef0 *R/miive.R
@@ -39,6 +39,7 @@ dfac0791303c77465b303453b20aee03 *data/bollen1989a.rda
 d34bfedba120fcc7341bd7a40e0cb45a *data/bollen1989c.rda
 293ef38c45c2720be85470bfab347758 *data/bollen1996.rda
 82f277c0f5b9c695eab63df4e2eeac0d *data/felson1979.rda
+310a77e0786d35d25fc76bda2bf9a64d *data/reisenzein1986.rda
 cf4b2c1be857700cdc1d83ce74fe5c6e *man/MIIVsem-package.Rd
 8fc061f00fe07e4948f5286eb871f311 *man/bollen1989a.Rd
 82cc3855360261e6d09b526ab695aa0d *man/bollen1989b.Rd
@@ -68,6 +69,7 @@ fd3cbd236470a510c17d6b08ae89aa0a *man/miive.2sls.Rd
 7ab4784a491c5aad34190b549f3162b7 *man/print.miivs.Rd
 a0800753378a8546e60e32278828cc8c *man/processData.Rd
 9e4e19380a8c76144155115cf76e9024 *man/pruneExcessMIIVs.Rd
+eb51e96d2923ef853af9faa85f43a427 *man/reisenzein1986.Rd
 b4e10a1679e89b3d5bc763f8b30e16ed *man/summary.miive.Rd
 52cdf9a70d805df0958b5bdf1bd5e98b *man/summary.miivs.Rd
 1e77fa106fbef63f530ed5a712bdeb29 *tests/testthat/rds/ex00_miivs_bloodpressure.RDS
