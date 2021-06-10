@@ -4,7 +4,9 @@
 \name{reisenzein1986}
 \alias{reisenzein1986}
 \title{Reisenzein data}
-\format{A data frame with 138 rows and 13 variables}
+\format{
+A data frame with 138 rows and 13 variables
+}
 \usage{
 reisenzein1986
 }

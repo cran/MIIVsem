@@ -4,13 +4,27 @@
 \alias{miive}
 \title{Model-implied instrumental variable (MIIV) estimation}
 \usage{
-miive(model = model, data = NULL, instruments = NULL,
-  sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
-  sample.cov.rescale = TRUE, estimator = "2SLS", se = "standard",
-  bootstrap = 1000L, boot.ci = "norm", missing = "listwise",
-  est.only = FALSE, var.cov = FALSE, miiv.check = TRUE,
-  ordered = NULL, sarg.adjust = "none", overid.degree = NULL,
-  overid.method = "stepwise.R2")
+miive(
+  model = model,
+  data = NULL,
+  instruments = NULL,
+  sample.cov = NULL,
+  sample.mean = NULL,
+  sample.nobs = NULL,
+  sample.cov.rescale = TRUE,
+  estimator = "2SLS",
+  se = "standard",
+  bootstrap = 1000L,
+  boot.ci = "norm",
+  missing = "listwise",
+  est.only = FALSE,
+  var.cov = FALSE,
+  miiv.check = TRUE,
+  ordered = NULL,
+  sarg.adjust = "none",
+  overid.degree = NULL,
+  overid.method = "stepwise.R2"
+)
 }
 \arguments{
 \item{model}{A model specified using lavaan model syntax or a

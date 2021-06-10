@@ -4,8 +4,13 @@
 \alias{getModelList}
 \title{provides model lists for latent variable gimme}
 \usage{
-getModelList(data, model, scaling = "first.indicator", lag = FALSE,
-  dfm = FALSE)
+getModelList(
+  data,
+  model,
+  scaling = "first.indicator",
+  lag = FALSE,
+  dfm = FALSE
+)
 }
 \description{
 provides model lists for latent variable gimme
