@@ -1,4 +1,4 @@
-8a029d2e218442b3413d2d70fa507771 *DESCRIPTION
+2cad1c6aba95bfc7660470a61e057b7a *DESCRIPTION
 7bc7e0b39e0042b5c544cd800cc3f4c2 *NAMESPACE
 ec49a09cc393f147c3bf7f010a6ff8d6 *R/MIIVsem-data.R
 b55fc372d55c11da8c0cc1727855ceef *R/MIIVsem.R
@@ -26,7 +26,7 @@ af77ed0b5c8ad706bc558f2e91c1cef0 *R/miive.R
 3113a43b54f36a0b39b0c04353e42598 *R/parseInstrumentSyntax.R
 1342dd505eac3c24b56ff5de2dfe90be *R/pivDerivatives.R
 0220a27e02eb058f7971b4d21fb950e5 *R/print.miive.R
-17a27158c8d9622cb0b0119457d1f335 *R/print.miivs.R
+df19386cd2a8b87c377f53081bd2a7e8 *R/print.miivs.R
 21d7703d9db887f9fb3ed91018b375ee *R/processData.R
 0226ff054f171c7a3a4b7677b7a764e1 *R/pruneExcessMIIVs.R
 ba7156d8ca6ac2026948d0e8d0198f51 *R/restrict.tests.R
