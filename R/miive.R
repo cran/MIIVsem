@@ -313,7 +313,7 @@
 #'   polychoric correlations. For some details on these
 #'   standard errors see Bollen & Maydeu-Olivares (2007, p. 315). If 
 #'   \code{var.cov = TRUE} only point estimates for the variance and
-#'   covariance estimates are calculated using the \code{DWLS} estimator
+#'   covariance estimates are calculated using the \code{ULS} estimator
 #'   in \pkg{lavaan}. To obtain standard errors for the variance and 
 #'   covariance parameters we recommend the bootstrap approach. 
 #'   Analytic standard errors for the variance covariance parameters 
@@ -508,7 +508,7 @@ miive <- function(model = model,
   } 
 
   #-------------------------------------------------------# 
-  # Process data. See documentation of processRawData. 
+  # Process data. See documentation of processData. 
   #-------------------------------------------------------# 
   g <- processData(data, 
                    sample.cov, 

@@ -1,4 +1,4 @@
-2cad1c6aba95bfc7660470a61e057b7a *DESCRIPTION
+9a9fe9eeb92b233be6fac92320f47dbd *DESCRIPTION
 7bc7e0b39e0042b5c544cd800cc3f4c2 *NAMESPACE
 ec49a09cc393f147c3bf7f010a6ff8d6 *R/MIIVsem-data.R
 b55fc372d55c11da8c0cc1727855ceef *R/MIIVsem.R
@@ -13,16 +13,16 @@ a0b22c356ad4a87bce7cf0d90be6c04f *R/buildVarCovSyntax.R
 cb54b39af4de1c019ff11a3580cbc4c7 *R/est2SLSSigmaSq.R
 2e89f81f2d4a4910441dcc9fc4b532c9 *R/estResidualCov.R
 284b04f6b6ed8c0c21969661393d17b1 *R/estTwoStageML.R
-a8599f35b0602810ea6f79d3805f1aa6 *R/estVarCovarCoef.R
+22abe0055f54f29066308250a189691b *R/estVarCovarCoef.R
 7c5ae7e22774024d0d1f51b44202cecb *R/estimatesTable.R
 c2765234e38ea4b7039d073fa976ad7c *R/factorScores.R
 c16aacb052d3faec76ad3b1004bb425c *R/fillParTable.R
 5d60ca031f60cacddaca5345f4560990 *R/fitFinalGimmeModels.R
 669b04353697224822acf2ae125ecc69 *R/getModelList.R
 8496f206594c8a2e70bf0cb54e70eda9 *R/miive.2sls.R
-af77ed0b5c8ad706bc558f2e91c1cef0 *R/miive.R
+4bba61ab64f43f0f4e18f703693196ca *R/miive.R
 183f63c99ab0be1360ffe13228b25332 *R/miivhelpers.R
-5f4e31f47d685f3d8348c762a0886c89 *R/miivs.R
+ca324a91d01142ec8c12654a5c77cb64 *R/miivs.R
 3113a43b54f36a0b39b0c04353e42598 *R/parseInstrumentSyntax.R
 1342dd505eac3c24b56ff5de2dfe90be *R/pivDerivatives.R
 0220a27e02eb058f7971b4d21fb950e5 *R/print.miive.R

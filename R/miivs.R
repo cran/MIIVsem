@@ -236,7 +236,7 @@ miivs <- function(model){
   latVars <- unique(pt$lhs[pt$op == "=~"])
   
   obsVars <- setdiff(
-    unique(c(pt$lhs[pt$op != "=="],pt$rhs[pt$op != "=="])), 
+    unique(c(pt$lhs[pt$op != "=="],pt$rhs[pt$op != "==" & pt$op != "~1"])), 
     latVars
   )
   
@@ -251,6 +251,14 @@ miivs <- function(model){
       unique(c(pt$rhs[pt$op!="=="], pt$lhs[pt$op!="=="])), 
       endVars
     ), errVars)
+  
+  
+  exoVarsObs <- intersect(exoVars, obsVars)
+  
+  if(length(exoVarsObs) > 0){
+    pt[pt$rhs %in% exoVarsObs & pt$op  == "~~" & pt$lhs == pt$rhs,"exo"] <- 1
+  }
+  
   
   allVars <- c(endVars,exoVars)
   
